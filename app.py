@@ -115,6 +115,7 @@ asset_liability_ratio = (
     tab_finance,
     tab_property,
     tab_evaluation,
+    tab_advisor,
     tab_faq,
 ) = st.tabs(
     [
@@ -122,6 +123,7 @@ asset_liability_ratio = (
         "💰 房貸與現金流",
         "🏠 投資與風險",
         "🔍 物件評估",
+        "🎯 決策助手",
         "💡 財富迷思 FAQ",
     ]
 )
@@ -207,6 +209,12 @@ with tab_evaluation:
     st.caption("💡 本區涵蓋購屋前三大盡職調查，三個分頁各自獨立輸入。")
     sub_presale, sub_used, sub_inspect = st.tabs(
         ["🔍 預售屋掃雷", "🏚️ 中古屋避險", "✅ 驗屋防護網"]
+    )
+
+with tab_advisor:
+    st.caption("💡 Ziv學長進階決策三件套：選址 → 估價 → 找租客，全流程實戰打點。")
+    sub_location, sub_price, sub_tenant = st.tabs(
+        ["📍 選址評估與建商快篩", "💲 合理房價與增貸空間", "🎯 優質租客嚴選雷達"]
     )
 
 
@@ -1436,6 +1444,334 @@ with tab_faq:
             "| **報酬率** | **+200%（200/100）** | **+67~100%（200/200~300）** |\n\n"
             "**👉 同樣的漲幅，預售屋因為自備款少，報酬率是新成屋的 2~3 倍。** "
             "這就是學長口中『買就賺』的數學。"
+        )
+
+
+# ======================================================
+# 決策助手：選址評估與建商快篩
+# ======================================================
+with sub_location:
+    st.header("📍 選址評估與建商快篩")
+    st.caption("Ziv學長心法：『選錯建商，神也救不了；選錯地段，等十年也漲不動。』")
+
+    # 一、建商安全性體檢
+    st.subheader("一、建商安全性體檢（四大硬指標）")
+    st.markdown("逐項確認，**未達 3 項以上者請直接放棄**。")
+
+    bc1, bc2 = st.columns(2)
+    with bc1:
+        builder_capital = st.checkbox(
+            "💰 資本額 > 2 億（顯示在公司登記資料）", key="adv_builder_capital",
+        )
+        builder_years = st.checkbox(
+            "📅 公司成立 > 5 ~ 10 年（成立越久越穩）", key="adv_builder_years",
+        )
+    with bc2:
+        builder_completed = st.checkbox(
+            "🏗️ 至少 1 ~ 2 個完工建案紀錄（不是只有畫餅的紙上建商）",
+            key="adv_builder_completed",
+        )
+        builder_warranty = st.checkbox(
+            "🛡️ 履約保證機制為「價金返還」（非同業連帶或續建）",
+            key="adv_builder_warranty",
+            help="價金返還是最保護買方的機制：建商倒了，你的錢全額退",
+        )
+
+    builder_score = sum(
+        [builder_capital, builder_years, builder_completed, builder_warranty]
+    )
+
+    if builder_score < 3:
+        st.error(
+            f"⚠️ **建商體質脆弱！僅符合 {builder_score} / 4 項硬指標。**\n\n"
+            "極高機率遇到 **爛尾樓、延遲交屋、品質糾紛、廣告不實**。"
+            "近年新聞上的爛尾建案，幾乎都是這類『資本不足 + 履約保證不完備』的小建商。\n\n"
+            "**👉 Ziv學長強烈建議：直接避開此案。** "
+            "便宜 10% 但拿不到房子，是 100% 的虧損。"
+        )
+    elif builder_score == 4:
+        st.success(
+            "✅ **建商體質完美達標！** 四大硬指標全數通過，"
+            "可放心進入下一階段評估。"
+        )
+    else:
+        st.success(
+            f"✅ **建商體質通過（{builder_score} / 4 項符合）。** "
+            "基礎安全門檻達成，但仍建議繼續查詢建商過往負評與消費糾紛紀錄。"
+        )
+
+    st.divider()
+
+    # 二、選址三多指標
+    st.subheader("二、選址三多指標 × 嫌惡掃雷")
+    st.caption("Ziv學長：『地段三多——交通多、就業多、建設多——是未來增值的鐵三角。』")
+
+    st.markdown("##### 🟢 加分項（三多）")
+    lc1, lc2, lc3 = st.columns(3)
+    with lc1:
+        loc_traffic = st.checkbox(
+            "🚄 **交通多**：捷運/高鐵/交流道 10 分鐘內", key="adv_loc_traffic",
+        )
+    with lc2:
+        loc_job = st.checkbox(
+            "🏢 **就業機會多**：科學園區/大型商辦聚落", key="adv_loc_job",
+        )
+    with lc3:
+        loc_build = st.checkbox(
+            "🏗️ **重大建設多**：重劃區/大型公園/特區計畫", key="adv_loc_build",
+        )
+
+    plus_count_adv = sum([loc_traffic, loc_job, loc_build])
+
+    st.markdown("##### 🔴 扣分地雷（嫌惡設施）")
+    bc3, bc4 = st.columns(2)
+    with bc3:
+        adv_bad_tower = st.checkbox("⚡ 高壓電塔 / 變電所 200 公尺內", key="adv_bad_tower")
+        adv_bad_factory = st.checkbox(
+            "🏭 工廠污染源 / 焚化爐", key="adv_bad_factory",
+        )
+    with bc4:
+        adv_bad_flood = st.checkbox(
+            "🌊 淹水紀錄區 / 順向坡 / 斷層帶", key="adv_bad_flood",
+        )
+        adv_bad_funeral = st.checkbox(
+            "⚰️ 殯葬設施 / 公墓 / 納骨塔 1 公里內", key="adv_bad_funeral",
+        )
+
+    adv_bad_count = sum(
+        [adv_bad_tower, adv_bad_factory, adv_bad_flood, adv_bad_funeral]
+    )
+
+    # 判定
+    st.markdown("##### 📊 選址綜合判定")
+    loc_progress = plus_count_adv / 3
+    st.progress(
+        loc_progress, text=f"三多達成度：{plus_count_adv} / 3（{loc_progress * 100:.0f}%）",
+    )
+
+    if adv_bad_count > 0:
+        st.error(
+            f"🚨 **警告：踩到 {adv_bad_count} 項嫌惡設施地雷！**\n\n"
+            "嫌惡設施對房價的影響是 **不可逆的**：\n"
+            "- 銀行鑑價會自動砍 10 ~ 20%\n"
+            "- 未來轉手週期至少多 6 個月\n"
+            "- 買家心理障礙難以化解，即使便宜也賣不掉\n\n"
+            "**👉 Ziv學長鐵口：建議立刻放棄此物件。**"
+        )
+    elif plus_count_adv == 3:
+        st.success(
+            "🚀 **三多全達標、無地雷！** 這就是 Ziv學長口中的『精華地段』。"
+            "可進入價格議價階段，並準備動手出價。"
+        )
+    elif plus_count_adv >= 2:
+        st.success(
+            f"🟢 **地段不錯（{plus_count_adv}/3）且無地雷。** "
+            "中長期增值動能可期，可進一步比較價格合理性。"
+        )
+    elif plus_count_adv == 1:
+        st.info(
+            f"📋 地段中規中矩（{plus_count_adv}/3），無地雷但題材有限。"
+            "建議再多看 5 ~ 10 案，找有題材的物件。"
+        )
+    else:
+        st.warning(
+            "⚠️ 三多一項都沒命中、純粹靠建商行銷話術。"
+            "Ziv學長提醒：沒題材的物件，靠通膨抗跌都費力。"
+        )
+
+
+# ======================================================
+# 決策助手：合理房價與增貸空間試算
+# ======================================================
+with sub_price:
+    st.header("💲 整棟大廈估價法 × 增貸空間試算")
+    st.caption("公式：(同棟最高單價 - 你的目標單價) × 坪數 = 預估潛在增貸空間。")
+
+    pc1, pc2, pc3 = st.columns(3)
+    with pc1:
+        max_unit_price = st.number_input(
+            "同社區/同棟最高實價登錄單價（萬/坪）",
+            0.0, value=70.0, step=0.5, key="adv_max_price",
+            help="可從內政部實價登錄網查同棟最近 12 個月的最高成交價",
+        )
+    with pc2:
+        target_unit_price = st.number_input(
+            "你的目標出價單價（萬/坪）",
+            0.0, value=55.0, step=0.5, key="adv_target_price",
+        )
+    with pc3:
+        ping_size = st.number_input(
+            "房屋權狀坪數",
+            0.0, value=30.0, step=0.5, key="adv_ping_size",
+        )
+
+    diff_per_ping = max_unit_price - target_unit_price
+    total_target_price = target_unit_price * ping_size * 10_000
+    total_max_price = max_unit_price * ping_size * 10_000
+    potential_gap = diff_per_ping * ping_size * 10_000
+    discount_pct = (
+        (diff_per_ping / max_unit_price * 100) if max_unit_price > 0 else 0
+    )
+
+    st.markdown("---")
+    st.markdown("##### 💰 估價結果")
+    mc1, mc2, mc3 = st.columns(3)
+    mc1.metric("你的目標總價", f"NT$ {total_target_price:,.0f}")
+    mc2.metric(
+        "同棟最高總價",
+        f"NT$ {total_max_price:,.0f}",
+        delta=f"差價 NT$ {potential_gap:,.0f}",
+        delta_color="normal" if potential_gap > 0 else "off",
+    )
+    mc3.metric(
+        "預估潛在增貸空間",
+        f"NT$ {potential_gap:,.0f}",
+        delta=f"-{discount_pct:.1f}% vs 最高價" if diff_per_ping > 0 else "0%",
+        delta_color="inverse" if diff_per_ping < 0 else "normal",
+        help="你比同棟最高價便宜多少，就是未來銀行可能讓你『搬出來』的錢",
+    )
+
+    if potential_gap > 0:
+        st.info(
+            f"📌 **學長金句：『銀行估價看整棟，不看單戶！』**\n\n"
+            f"你的入手價比同棟最高價低 **NT$ {potential_gap:,.0f}**"
+            f"（{discount_pct:.1f}%），這部分就是未來能向銀行『搬出來的錢（增貸額度）』。\n\n"
+            "**🧮 實戰換算（以增貸 80% 計）：**\n"
+            f"- 預估可增貸金額：**NT$ {potential_gap * 0.8:,.0f}**\n"
+            "- 用途：投入 0050 / 保單 / 下一間房頭期款（依富邦增貸 SOP 過水）\n\n"
+            "**👉 結論：價差越大越好。挑同棟『最便宜那戶』，等於挑了一個現成的增貸金雞母。**"
+        )
+    elif potential_gap == 0:
+        st.warning(
+            "⚠️ 你的目標單價已經等於同棟最高價，**沒有增貸空間**。"
+            "再殺價試試，或重新評估標的。"
+        )
+    else:
+        st.error(
+            f"❌ **你的目標單價 {target_unit_price} 萬/坪 已高於同棟最高價 "
+            f"{max_unit_price} 萬/坪！**\n\n"
+            "等於你買的瞬間就『資不抵債』，銀行鑑價會直接砍貸款成數。"
+            "**立刻重新議價或放棄此案。**"
+        )
+
+    # 議價策略圖
+    st.markdown("---")
+    st.markdown("##### 📊 議價策略視覺化")
+    fig_price = go.Figure()
+    fig_price.add_trace(
+        go.Bar(
+            x=["同棟最高總價", "你的目標總價"],
+            y=[total_max_price, total_target_price],
+            marker_color=["#C0392B", "#27AE60"],
+            text=[f"NT$ {total_max_price:,.0f}", f"NT$ {total_target_price:,.0f}"],
+            textposition="outside",
+        )
+    )
+    fig_price.update_layout(
+        yaxis_title="總價（元）",
+        height=380,
+        margin=dict(t=30, b=40),
+    )
+    st.plotly_chart(fig_price, use_container_width=True)
+
+
+# ======================================================
+# 決策助手：優質租客嚴選雷達
+# ======================================================
+with sub_tenant:
+    st.header("🎯 優質租客嚴選雷達")
+    st.caption("Ziv學長：『寧可空租一個月，也不要租給麻煩客。』")
+
+    st.markdown("##### 📋 看房 4 大檢核項（每項 25 分，滿分 100）")
+
+    tc1, tc2 = st.columns(2)
+    with tc1:
+        tenant_id = st.checkbox(
+            "🪪 能主動提供工作名片 / 在職證明", key="adv_tn_id",
+            help="主動透明 = 沒在隱藏",
+        )
+        tenant_ontime = st.checkbox(
+            "⏰ 看房準時、無遲到", key="adv_tn_ontime",
+            help="連看房都遲到，繳房租也不會準時",
+        )
+    with tc2:
+        tenant_polite = st.checkbox(
+            "🙏 溝通態度有禮貌、無不良嗜好（菸/酒/毒品/八大）",
+            key="adv_tn_polite",
+        )
+        tenant_deposit = st.checkbox(
+            "💵 兩個月押金能一次付清、不拖欠", key="adv_tn_deposit",
+            help="連押金都湊不出來，月租金更難穩定",
+        )
+
+    tenant_items = [tenant_id, tenant_ontime, tenant_polite, tenant_deposit]
+    tenant_score = sum(tenant_items) * 25
+
+    st.markdown("---")
+    st.markdown("##### 🏆 租客評分結果")
+
+    score_col, gauge_col = st.columns([1, 1])
+    with score_col:
+        st.metric("租客總分", f"{tenant_score} / 100", delta=f"{tenant_score - 75:+d} vs 通過線")
+        st.progress(
+            tenant_score / 100,
+            text=f"通過率：{tenant_score}% (學長標準 ≥ 75%)",
+        )
+        st.caption(
+            "勾選項目：\n"
+            f"- {'✅' if tenant_id else '❌'} 工作證明\n"
+            f"- {'✅' if tenant_ontime else '❌'} 看房準時\n"
+            f"- {'✅' if tenant_polite else '❌'} 禮貌無不良嗜好\n"
+            f"- {'✅' if tenant_deposit else '❌'} 押金一次付清"
+        )
+
+    with gauge_col:
+        fig_tenant = go.Figure(
+            go.Indicator(
+                mode="gauge+number",
+                value=tenant_score,
+                number={"suffix": " 分", "font": {"size": 44}},
+                gauge={
+                    "axis": {"range": [0, 100]},
+                    "bar": {"color": "#2C3E50"},
+                    "steps": [
+                        {"range": [0, 50], "color": "#F5B7B1"},
+                        {"range": [50, 75], "color": "#F9E79F"},
+                        {"range": [75, 100], "color": "#A9DFBF"},
+                    ],
+                    "threshold": {
+                        "line": {"color": "red", "width": 4},
+                        "thickness": 0.8,
+                        "value": 75,
+                    },
+                },
+                title={"text": "優質租客指數"},
+            )
+        )
+        fig_tenant.update_layout(height=260, margin=dict(t=40, b=20))
+        st.plotly_chart(fig_tenant, use_container_width=True)
+
+    if tenant_score < 75:
+        st.warning(
+            f"⚠️ **租客評分 {tenant_score} 分（< 75 分通過線）。**\n\n"
+            "**Ziv學長鐵則：寧可空租一個月，也不要租給麻煩客！**\n\n"
+            "把問題租客請進來的代價：\n"
+            "- 拖欠房租 → 訴訟成本 NT$ 20,000+，跑流程 6 個月起\n"
+            "- 屋況破壞 → 修繕費吃掉押金還倒貼\n"
+            "- 蟑螂租客（占住不走）→ 損失最高可達一年租金\n"
+            "- 鄰居檢舉、社區糾紛 → 被列管後物件難轉手\n\n"
+            "**👉 行動方針：果斷說「不」，繼續找下一位。** "
+            "好的房子永遠不缺租客，不要急。"
+        )
+    else:
+        st.success(
+            f"✅ **租客評分 {tenant_score} 分（≥ 75 分通過線）！**\n\n"
+            "此為 Ziv學長口中的『優質租客體質』，可進入正式簽約階段。\n\n"
+            "**📝 簽約前最後檢核：**\n"
+            "- 押金、首月租金 **匯款入帳後** 再交鑰匙\n"
+            "- 合約載明：禁止轉租、禁止違法用途、退租前 30 天通知\n"
+            "- 拍照存證屋況、清點家電（雙方簽字）\n"
+            "- 二聯式發票報稅可選擇『個人租賃所得』申報"
         )
 
 
