@@ -112,29 +112,102 @@ asset_liability_ratio = (
 # ===================== 分頁區 =====================
 (
     tab_check,
-    tab_loan,
-    tab_cash,
-    tab_invest,
-    tab_risk,
-    tab_lazy,
-    tab_presale,
-    tab_used,
-    tab_inspect,
+    tab_finance,
+    tab_property,
+    tab_evaluation,
     tab_faq,
 ) = st.tabs(
     [
         "🩺 體質檢測",
-        "💰 房貸試算引擎",
-        "📈 現金流還款分析",
-        "🏠 投資收益情境",
-        "⚠️ 風險壓力測試",
-        "📋 租金安全懶人包",
-        "🔍 預售屋掃雷",
-        "🏚️ 中古屋避險",
-        "✅ 驗屋防護網",
+        "💰 房貸與現金流",
+        "🏠 投資與風險",
+        "🔍 物件評估",
         "💡 財富迷思 FAQ",
     ]
 )
+
+# ---- 在各主分頁中宣告次要分頁 + 共用輸入 ----
+with tab_finance:
+    st.caption("💡 本區共用『房屋與貸款條件』，下方兩個分頁同步顯示。")
+    with st.container(border=True):
+        st.markdown("##### 🏠 房屋與貸款條件（房貸 + 現金流共用）")
+        loan_col_a, loan_col_b = st.columns(2)
+        with loan_col_a:
+            house_price = st.number_input("房屋總價", 0, value=10_000_000, step=100_000, key="loan_house_price")
+            down_payment = st.number_input("自備款", 0, value=2_000_000, step=100_000, key="loan_down_payment")
+            renovation = st.number_input("裝潢費用", 0, value=300_000, step=10_000, key="loan_renovation")
+        with loan_col_b:
+            other_fees = st.number_input("其他費用（代書/稅費）", 0, value=50_000, step=10_000, key="loan_other_fees")
+            annual_rate_pct = st.number_input(
+                "貸款年利率（%）", 0.0, 10.0, 2.5, 0.05, format="%.2f", key="loan_rate_pct",
+            )
+            grace_years = st.number_input("寬限期（年，只繳利息）", 0, 10, 5, 1, key="loan_grace_years")
+
+    annual_rate = annual_rate_pct / 100
+    loan_amount = max(house_price - down_payment, 0)
+    ltv = loan_amount / house_price if house_price > 0 else 0
+    total_investment = down_payment + renovation + other_fees
+    monthly_rate = annual_rate / 12
+    total_months = int(loan_years * 12)
+    grace_months = int(min(grace_years, loan_years) * 12)
+    pay_months = total_months - grace_months
+    grace_payment = loan_amount * monthly_rate
+    post_grace_payment = pmt(monthly_rate, pay_months, loan_amount) if pay_months > 0 else 0
+    avg_monthly_payment = (
+        (grace_payment * grace_months + post_grace_payment * pay_months) / total_months
+        if total_months > 0 else 0
+    )
+    total_interest = (
+        grace_payment * grace_months + post_grace_payment * pay_months - loan_amount
+    )
+    total_repayment = total_interest + loan_amount
+    interest_ratio = total_interest / total_repayment if total_repayment > 0 else 0
+    mortgage_dti = (
+        (monthly_bad_debt + post_grace_payment) / total_monthly_income
+        if total_monthly_income > 0 else 1.0
+    )
+
+    sub_loan, sub_cash = st.tabs(["💰 房貸試算引擎", "📈 現金流還款分析"])
+
+with tab_property:
+    st.caption("💡 本區共用『租金與投資』參數，下方三個分頁同步顯示。")
+    with st.container(border=True):
+        st.markdown("##### 📈 租金與投資參數（投資/風險/懶人包共用）")
+        prop_col_a, prop_col_b = st.columns(2)
+        with prop_col_a:
+            rent = st.number_input("預估月租金", 0, value=35_000, step=1_000, key="inv_rent")
+            mgmt_fee = st.number_input("月管理費＋稅", 0, value=2_000, step=500, key="inv_mgmt_fee")
+            vacancy_months = st.number_input(
+                "年度空租月數預估", 0, 12, 2, 1, key="risk_vacancy_months",
+            )
+        with prop_col_b:
+            vacancy_discount = st.slider(
+                "空置保守打折比例（懶人包公式）", 0.0, 0.5, 0.10, 0.01,
+                help="0.10 代表打 9 折；越保守可拉到 0.20",
+                key="inv_vacancy_discount",
+            )
+            repair_pct = st.slider(
+                "維修小金庫（佔租金 %）", 0.0, 0.2, 0.05, 0.01,
+                help="新屋預設 5%、老屋建議 10%",
+                key="inv_repair_pct",
+            )
+            location_rating = st.select_slider(
+                "房屋地段等級",
+                options=[1, 2, 3, 4, 5],
+                value=2,
+                format_func=lambda x: {1: "1 精華", 2: "2 優良", 3: "3 一般", 4: "4 偏遠", 5: "5 極偏"}[x],
+                key="risk_location",
+            )
+
+    sub_invest, sub_risk, sub_lazy = st.tabs(
+        ["🏠 投資收益情境", "⚠️ 風險壓力測試", "📋 租金安全懶人包"]
+    )
+
+with tab_evaluation:
+    st.caption("💡 本區涵蓋購屋前三大盡職調查，三個分頁各自獨立輸入。")
+    sub_presale, sub_used, sub_inspect = st.tabs(
+        ["🔍 預售屋掃雷", "🏚️ 中古屋避險", "✅ 驗屋防護網"]
+    )
 
 
 # ======================================================
@@ -219,50 +292,10 @@ with tab_check:
 # ======================================================
 # Tab 2：房貸試算引擎（PMT + 寬限期 + 攤還曲線）
 # ======================================================
-with tab_loan:
+with sub_loan:
     st.header("💰 房貸試算引擎（PMT + 寬限期）")
     st.caption("公式來源：Excel 房貸計算引擎 — PMT 本息攤還、寬限期只繳利息、利率敏感度。")
 
-    with st.container(border=True):
-        st.markdown("##### 🏠 房屋與貸款條件")
-        loan_col_a, loan_col_b = st.columns(2)
-        with loan_col_a:
-            house_price = st.number_input("房屋總價", 0, value=10_000_000, step=100_000, key="loan_house_price")
-            down_payment = st.number_input("自備款", 0, value=2_000_000, step=100_000, key="loan_down_payment")
-            renovation = st.number_input("裝潢費用", 0, value=300_000, step=10_000, key="loan_renovation")
-        with loan_col_b:
-            other_fees = st.number_input("其他費用（代書/稅費）", 0, value=50_000, step=10_000, key="loan_other_fees")
-            annual_rate_pct = st.number_input(
-                "貸款年利率（%）", 0.0, 10.0, 2.5, 0.05, format="%.2f", key="loan_rate_pct",
-            )
-            grace_years = st.number_input("寬限期（年，只繳利息）", 0, 10, 5, 1, key="loan_grace_years")
-
-    # ---- 房貸計算 ----
-    annual_rate = annual_rate_pct / 100
-    loan_amount = max(house_price - down_payment, 0)
-    ltv = loan_amount / house_price if house_price > 0 else 0
-    total_investment = down_payment + renovation + other_fees
-    monthly_rate = annual_rate / 12
-    total_months = int(loan_years * 12)
-    grace_months = int(min(grace_years, loan_years) * 12)
-    pay_months = total_months - grace_months
-    grace_payment = loan_amount * monthly_rate
-    post_grace_payment = pmt(monthly_rate, pay_months, loan_amount) if pay_months > 0 else 0
-    avg_monthly_payment = (
-        (grace_payment * grace_months + post_grace_payment * pay_months) / total_months
-        if total_months > 0 else 0
-    )
-    total_interest = (
-        grace_payment * grace_months + post_grace_payment * pay_months - loan_amount
-    )
-    total_repayment = total_interest + loan_amount
-    interest_ratio = total_interest / total_repayment if total_repayment > 0 else 0
-    mortgage_dti = (
-        (monthly_bad_debt + post_grace_payment) / total_monthly_income
-        if total_monthly_income > 0 else 1.0
-    )
-
-    st.markdown("---")
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("貸款金額", f"NT$ {loan_amount:,.0f}")
     m2.metric("貸款成數 (LTV)", f"{ltv * 100:.1f}%")
@@ -392,7 +425,7 @@ with tab_loan:
 # ======================================================
 # Tab 3：現金流還款分析
 # ======================================================
-with tab_cash:
+with sub_cash:
     st.header("📈 現金流還款分析")
     st.caption("公式來源：Excel 現金流分析（無寬限期）— 月/年現金流、累積現金流、負擔率。")
 
@@ -509,29 +542,10 @@ with tab_cash:
 # ======================================================
 # Tab 4：投資收益情境
 # ======================================================
-with tab_invest:
+with sub_invest:
     st.header("🏠 投資收益情境（含房價增值3情境）")
     st.caption("公式來源：Excel 投資收益計算 — 租金回收率、投資回收期、樂觀/現實/悲觀房價增值。")
 
-    with st.container(border=True):
-        st.markdown("##### 📈 租金與投資參數")
-        inv_col_a, inv_col_b = st.columns(2)
-        with inv_col_a:
-            rent = st.number_input("預估月租金", 0, value=35_000, step=1_000, key="inv_rent")
-            mgmt_fee = st.number_input("月管理費＋稅", 0, value=2_000, step=500, key="inv_mgmt_fee")
-        with inv_col_b:
-            vacancy_discount = st.slider(
-                "空置保守打折比例（懶人包公式）", 0.0, 0.5, 0.10, 0.01,
-                help="0.10 代表打 9 折；越保守可拉到 0.20",
-                key="inv_vacancy_discount",
-            )
-            repair_pct = st.slider(
-                "維修小金庫（佔租金 %）", 0.0, 0.2, 0.05, 0.01,
-                help="新屋預設 5%、老屋建議 10%",
-                key="inv_repair_pct",
-            )
-
-    st.markdown("---")
     annual_rent = rent * 12
     rental_yield = annual_rent / total_investment if total_investment > 0 else 0
     monthly_net = rent - post_grace_payment
@@ -613,27 +627,10 @@ with tab_invest:
 # ======================================================
 # Tab 5：風險壓力測試（利率 + 空租 + 收入下滑）
 # ======================================================
-with tab_risk:
+with sub_risk:
     st.header("⚠️ 風險壓力測試")
     st.caption("公式來源：Excel 風險管理系統 — 空租準備金、利率衝擊、收入下滑。")
 
-    with st.container(border=True):
-        st.markdown("##### 🎚️ 風險情境參數")
-        risk_col_a, risk_col_b = st.columns(2)
-        with risk_col_a:
-            location_rating = st.select_slider(
-                "房屋地段等級",
-                options=[1, 2, 3, 4, 5],
-                value=2,
-                format_func=lambda x: {1: "1 精華", 2: "2 優良", 3: "3 一般", 4: "4 偏遠", 5: "5 極偏"}[x],
-                key="risk_location",
-            )
-        with risk_col_b:
-            vacancy_months = st.number_input(
-                "年度空租月數預估", 0, 12, 2, 1, key="risk_vacancy_months",
-            )
-
-    st.markdown("---")
     # 空租風險
     st.markdown("##### 🏚️ 空租風險評估")
     monthly_cost = post_grace_payment + mgmt_fee
@@ -746,7 +743,7 @@ with tab_risk:
 # ======================================================
 # Tab 6：租金安全懶人包（1e812 公式）
 # ======================================================
-with tab_lazy:
+with sub_lazy:
     st.header("📋 租金安全懶人包")
     st.caption("公式來源：Excel 懶人包 — 安全指數 = 實拿租金 / 月房貸；底線租金 = 總成本 / (1-折讓)。")
 
@@ -819,7 +816,7 @@ with tab_lazy:
 # ======================================================
 # Tab 7：預售屋實戰掃雷與潛力評分表
 # ======================================================
-with tab_presale:
+with sub_presale:
     st.header("🔍 預售屋實戰掃雷與潛力評分表")
     st.caption(
         "依據《Ziv學長：預售屋買就賺》實戰策略 — "
@@ -1021,7 +1018,7 @@ with tab_presale:
 # ======================================================
 # Tab 8：中古屋淘金與銀行貸款避險儀表板
 # ======================================================
-with tab_used:
+with sub_used:
     st.header("🏚️ 中古屋淘金與銀行貸款避險儀表板")
     st.caption("依據《Ziv學長：中古屋投資不敗指南》— 三大不買、銀行拒貸地雷、真實居住成本。")
 
@@ -1176,7 +1173,7 @@ with tab_used:
 # ======================================================
 # Tab 9：數位驗屋防護網與待辦清單
 # ======================================================
-with tab_inspect:
+with sub_inspect:
     st.header("✅ 數位驗屋防護網與待辦清單")
     st.caption("逐項勾選，進度條即時前進；發現重大問題會自動列出議價籌碼。")
 
