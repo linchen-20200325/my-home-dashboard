@@ -31,6 +31,11 @@ def pmt(monthly_rate: float, n_periods: int, principal: float) -> float:
     return principal * monthly_rate * factor / (factor - 1)
 
 
+def fmt_wan(amount_ntd: float, decimals: int = 1) -> str:
+    """把 NT$ 金額格式化為『X.X 萬』。"""
+    return f"{amount_ntd / 10_000:,.{decimals}f} 萬"
+
+
 def amortization_schedule(principal, annual_rate, years, grace_years=0):
     """逐月攤還表：月付金、利息、本金、剩餘本金"""
     monthly_rate = annual_rate / 12
@@ -83,94 +88,110 @@ with st.sidebar:
         age = st.number_input("目前年齡", 18, 80, 30, 1)
         loan_years = st.number_input("預計申請貸款年限（年）", 10, 40, 30, 5)
 
-    with st.expander("💰 每月收入", expanded=True):
+    with st.expander("💰 每月收入（單位：萬）", expanded=True):
         st.caption("三項收入分開填寫，系統會自動加總（獎金÷12 均攤回每月），請勿重複計入。")
         monthly_salary = st.number_input(
             "① 每月本薪（稅後實領，不含獎金）",
-            0,
-            value=60_000,
-            step=1_000,
-            help="勞動所得的固定月薪，已扣除勞健保、稅款後的『實領金額』；不要把年終、季獎、加班費塞進來。",
-        )
+            0.0,
+            value=6.0,
+            step=0.1,
+            format="%.1f",
+            help="勞動所得的固定月薪，已扣除勞健保、稅款後的『實領金額』；不要把年終、季獎、加班費塞進來。單位：萬。",
+        ) * 10_000
         annual_bonus = st.number_input(
             "② 每年獎金（年終、季獎、績效獎金總和）",
-            0,
-            value=120_000,
-            step=10_000,
-            help="一整年所有非固定的獎金加總（年終 + 季獎 + 績效 + 三節），系統會自動 ÷12 均攤到每月。若無則填 0。",
-        )
+            0.0,
+            value=12.0,
+            step=1.0,
+            format="%.1f",
+            help="一整年所有非固定的獎金加總，系統會自動 ÷12 均攤到每月。若無則填 0。單位：萬。",
+        ) * 10_000
         other_income = st.number_input(
             "③ 每月其他固定收入（兼職、租金、股息、利息）",
-            0,
-            value=0,
-            step=1_000,
-            help="本薪以外、每月或可換算成每月的穩定現金流（兼差、副業、房租收入、配息）。一次性收入不要填。",
-        )
+            0.0,
+            value=0.0,
+            step=0.1,
+            format="%.1f",
+            help="本薪以外、每月或可換算成每月的穩定現金流。一次性收入不要填。單位：萬。",
+        ) * 10_000
         st.markdown(
-            f"**合計每月可用收入：NT$ "
-            f"{monthly_salary + annual_bonus / 12 + other_income:,.0f}**"
+            f"**合計每月可用收入："
+            f"{fmt_wan(monthly_salary + annual_bonus / 12 + other_income)}**"
         )
 
-    with st.expander("💸 每月支出（不含房貸）", expanded=True):
+    with st.expander("💸 每月支出（不含房貸／單位：萬）", expanded=True):
         st.caption("房貸另在『基本資料』分頁的房屋條件中計算。以下七項分開填寫，避免漏算。")
         monthly_rent = st.number_input(
             "房租（買房後此欄歸零，房貸另計）",
-            0,
-            value=0,
-            step=1_000,
+            0.0,
+            value=0.0,
+            step=0.1,
+            format="%.1f",
             help="目前若還在租屋，請填每月房租。買房之後此欄歸零，房貸金額會由『基本資料』分頁自動計算。",
-        )
+        ) * 10_000
         monthly_filial = st.number_input(
             "孝親費／長輩生活費",
-            0,
-            value=0,
-            step=1_000,
+            0.0,
+            value=0.0,
+            step=0.1,
+            format="%.1f",
             help="每月固定給父母、長輩的金額。若是不定期才給，請以全年總額 ÷12 換算。",
-        )
+        ) * 10_000
         monthly_staff = st.number_input(
             "雇用人員薪資（家事員／看護／保母）",
-            0,
-            value=0,
-            step=1_000,
+            0.0,
+            value=0.0,
+            step=0.1,
+            format="%.1f",
             help="支付給家事服務員、看護、保母、家教等人員的固定月薪。",
-        )
+        ) * 10_000
         monthly_insurance = st.number_input(
             "保險費（月攤）",
-            0,
-            value=0,
-            step=500,
+            0.0,
+            value=0.0,
+            step=0.05,
+            format="%.2f",
             help="壽險、醫療險、意外險、車險等所有保單的年保費總和 ÷12。",
-        )
+        ) * 10_000
         monthly_tuition = st.number_input(
             "學費（自己進修／子女教育）",
-            0,
-            value=0,
-            step=1_000,
+            0.0,
+            value=0.0,
+            step=0.1,
+            format="%.1f",
             help="自己的進修課程、子女學費、補習費、才藝班等教育支出。一學期繳一次的請 ÷月份數。",
-        )
+        ) * 10_000
         monthly_living = st.number_input(
             "生活開銷（食衣行育樂）",
-            0,
-            value=25_000,
-            step=1_000,
+            0.0,
+            value=2.5,
+            step=0.1,
+            format="%.1f",
             help="日常吃喝、交通、水電瓦斯、通訊、娛樂、治裝等扣除上述項目後的所有開銷。",
-        )
+        ) * 10_000
         monthly_bad_debt = st.number_input(
             "壞債支出（信貸／車貸／卡循／現金卡）",
-            0,
-            value=10_000,
-            step=1_000,
+            0.0,
+            value=1.0,
+            step=0.1,
+            format="%.1f",
             help="每月需固定還款的高利率負債：信用貸款、車貸、信用卡循環利息、現金卡。房貸不算。",
-        )
+        ) * 10_000
         st.markdown(
-            f"**合計每月固定支出：NT$ "
-            f"{monthly_rent + monthly_filial + monthly_staff + monthly_insurance + monthly_tuition + monthly_living + monthly_bad_debt:,.0f}**"
+            f"**合計每月固定支出："
+            f"{fmt_wan(monthly_rent + monthly_filial + monthly_staff + monthly_insurance + monthly_tuition + monthly_living + monthly_bad_debt)}**"
         )
 
-    with st.expander("🏦 財力證明", expanded=False):
-        total_assets = st.number_input("名下總資產估值", 0, value=2_000_000, step=10_000)
-        total_liabilities = st.number_input("名下總負債餘額", 0, value=500_000, step=10_000)
-        cash_reserve = st.number_input("現金存款（緊急預備金來源）", 0, value=500_000, step=10_000)
+    with st.expander("🏦 財力證明（單位：萬）", expanded=False):
+        total_assets = st.number_input(
+            "名下總資產估值", 0.0, value=200.0, step=10.0, format="%.0f",
+        ) * 10_000
+        total_liabilities = st.number_input(
+            "名下總負債餘額", 0.0, value=50.0, step=5.0, format="%.0f",
+        ) * 10_000
+        cash_reserve = st.number_input(
+            "現金存款（緊急預備金來源）", 0.0, value=50.0, step=5.0, format="%.0f",
+        ) * 10_000
 
 
 # ===================== 共用核心計算（僅依賴側邊欄）=====================
@@ -217,11 +238,23 @@ with tab_basic:
         st.markdown("##### 🏠 房屋與貸款條件（房貸 / 現金流共用）")
         loan_col_a, loan_col_b = st.columns(2)
         with loan_col_a:
-            house_price = st.number_input("房屋總價", 0, value=10_000_000, step=100_000, key="loan_house_price")
-            down_payment = st.number_input("自備款", 0, value=2_000_000, step=100_000, key="loan_down_payment")
-            renovation = st.number_input("裝潢費用", 0, value=300_000, step=10_000, key="loan_renovation")
+            house_price = st.number_input(
+                "房屋總價（萬）", 0.0, value=1000.0, step=10.0, format="%.0f",
+                key="loan_house_price",
+            ) * 10_000
+            down_payment = st.number_input(
+                "自備款（萬）", 0.0, value=200.0, step=10.0, format="%.0f",
+                key="loan_down_payment",
+            ) * 10_000
+            renovation = st.number_input(
+                "裝潢費用（萬）", 0.0, value=30.0, step=1.0, format="%.0f",
+                key="loan_renovation",
+            ) * 10_000
         with loan_col_b:
-            other_fees = st.number_input("其他費用（代書/稅費）", 0, value=50_000, step=10_000, key="loan_other_fees")
+            other_fees = st.number_input(
+                "其他費用 代書／稅費（萬）", 0.0, value=5.0, step=0.5, format="%.1f",
+                key="loan_other_fees",
+            ) * 10_000
             annual_rate_pct = st.number_input(
                 "貸款年利率（%）", 0.0, 10.0, 2.5, 0.05, format="%.2f", key="loan_rate_pct",
             )
@@ -261,8 +294,12 @@ with tab_rental:
         st.markdown("##### 📈 租金與投資參數（投資/風險/懶人包/租客共用）")
         prop_col_a, prop_col_b = st.columns(2)
         with prop_col_a:
-            rent = st.number_input("預估月租金", 0, value=35_000, step=1_000, key="inv_rent")
-            mgmt_fee = st.number_input("月管理費＋稅", 0, value=2_000, step=500, key="inv_mgmt_fee")
+            rent = st.number_input(
+                "預估月租金（萬）", 0.0, value=3.5, step=0.1, format="%.1f", key="inv_rent",
+            ) * 10_000
+            mgmt_fee = st.number_input(
+                "月管理費＋稅（萬）", 0.0, value=0.2, step=0.05, format="%.2f", key="inv_mgmt_fee",
+            ) * 10_000
             vacancy_months = st.number_input(
                 "年度空租月數預估", 0, 12, 2, 1, key="risk_vacancy_months",
             )
@@ -306,13 +343,13 @@ with sub_check:
     c1, c2, c3 = st.columns(3)
     c1.metric(
         "每月可用總收入",
-        f"NT$ {total_monthly_income:,.0f}",
-        help=f"本薪 {monthly_salary:,.0f} ＋ 年獎金 ÷12 ({annual_bonus / 12:,.0f}) ＋ 其他 {other_income:,.0f}",
+        f"{fmt_wan(total_monthly_income)}",
+        help=f"本薪 {fmt_wan(monthly_salary)} ＋ 年獎金 ÷12 ({fmt_wan(annual_bonus / 12)}) ＋ 其他 {fmt_wan(other_income)}",
     )
     c2.metric(
         "每月結餘",
-        f"NT$ {monthly_surplus:,.0f}",
-        delta=f"{monthly_surplus:,.0f}",
+        f"{fmt_wan(monthly_surplus)}",
+        delta=fmt_wan(monthly_surplus),
         delta_color="normal" if monthly_surplus >= 0 else "inverse",
     )
     c3.metric("壞債佔收入比", f"{bad_debt_ratio * 100:.1f}%")
@@ -326,14 +363,14 @@ with sub_check:
     elif monthly_surplus > 0 and bad_debt_ratio > 0.15:
         st.warning(
             "⚠️ **中產階級迷思：把花錢的東西當成資產。**\n\n"
-            f"結餘雖正（+NT$ {monthly_surplus:,.0f}），但壞債佔比 "
+            f"結餘雖正（+{fmt_wan(monthly_surplus)}），但壞債佔比 "
             f"{bad_debt_ratio * 100:.1f}%（>15%）。請先還清車貸／信貸／卡循，"
             "區分『好債（買生錢資產）』與『壞債（買花錢負債）』，才能開啟低利房貸槓桿。"
         )
     else:
         st.success(
             "✅ **富人現金流！恭喜你具備累積『好債』的能力。**\n\n"
-            f"每月結餘 +NT$ {monthly_surplus:,.0f}，壞債比僅 {bad_debt_ratio * 100:.1f}%。"
+            f"每月結餘 +{fmt_wan(monthly_surplus)}，壞債比僅 {bad_debt_ratio * 100:.1f}%。"
             "下一步：建立信用、養財力證明，向銀行借低息房貸買進生錢資產。"
         )
 
@@ -387,20 +424,20 @@ with sub_loan:
     st.caption("公式來源：Excel 房貸計算引擎 — PMT 本息攤還、寬限期只繳利息、利率敏感度。")
 
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("貸款金額", f"NT$ {loan_amount:,.0f}")
+    m1.metric("貸款金額", f"{fmt_wan(loan_amount)}")
     m2.metric("貸款成數 (LTV)", f"{ltv * 100:.1f}%")
-    m3.metric("總投資成本", f"NT$ {total_investment:,.0f}", help="自備款＋裝潢＋其他費用")
+    m3.metric("總投資成本", f"{fmt_wan(total_investment)}", help="自備款＋裝潢＋其他費用")
     m4.metric("月利率", f"{monthly_rate * 100:.4f}%")
 
     st.markdown("##### 💳 月付金結構")
     p1, p2, p3 = st.columns(3)
-    p1.metric("寬限期月付金", f"NT$ {grace_payment:,.0f}", help="僅繳利息")
-    p2.metric("寬限期後月付金", f"NT$ {post_grace_payment:,.0f}", help="本息平均攤還")
-    p3.metric("加權平均月付", f"NT$ {avg_monthly_payment:,.0f}")
+    p1.metric("寬限期月付金", f"{fmt_wan(grace_payment)}", help="僅繳利息")
+    p2.metric("寬限期後月付金", f"{fmt_wan(post_grace_payment)}", help="本息平均攤還")
+    p3.metric("加權平均月付", f"{fmt_wan(avg_monthly_payment)}")
 
     s1, s2, s3 = st.columns(3)
-    s1.metric("總利息支出", f"NT$ {total_interest:,.0f}")
-    s2.metric("總還款金額", f"NT$ {total_repayment:,.0f}")
+    s1.metric("總利息支出", f"{fmt_wan(total_interest)}")
+    s2.metric("總還款金額", f"{fmt_wan(total_repayment)}")
     s3.metric("利息佔總還款", f"{interest_ratio * 100:.1f}%")
 
     st.markdown("---")
@@ -417,22 +454,22 @@ with sub_loan:
         fig = make_subplots(specs=[[{"secondary_y": True}]])
         fig.add_trace(
             go.Bar(
-                x=annual["年度"], y=annual["年利息"],
-                name="年繳利息", marker_color="#E74C3C",
+                x=annual["年度"], y=annual["年利息"] / 10_000,
+                name="年繳利息（萬）", marker_color="#E74C3C",
             ),
             secondary_y=False,
         )
         fig.add_trace(
             go.Bar(
-                x=annual["年度"], y=annual["年本金"],
-                name="年繳本金", marker_color="#27AE60",
+                x=annual["年度"], y=annual["年本金"] / 10_000,
+                name="年繳本金（萬）", marker_color="#27AE60",
             ),
             secondary_y=False,
         )
         fig.add_trace(
             go.Scatter(
-                x=annual["年度"], y=annual["年底剩餘"],
-                name="年底剩餘本金", mode="lines+markers",
+                x=annual["年度"], y=annual["年底剩餘"] / 10_000,
+                name="年底剩餘本金（萬）", mode="lines+markers",
                 line=dict(color="#2C3E50", width=3),
             ),
             secondary_y=True,
@@ -440,23 +477,23 @@ with sub_loan:
         fig.update_layout(
             barmode="stack",
             xaxis_title="貸款年度",
-            yaxis_title="當年現金流出（元）",
+            yaxis_title="當年現金流出（萬）",
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
             height=450,
             margin=dict(t=20, b=40),
         )
-        fig.update_yaxes(title_text="當年現金流出（元）", secondary_y=False)
-        fig.update_yaxes(title_text="剩餘本金（元）", secondary_y=True)
+        fig.update_yaxes(title_text="當年現金流出（萬）", secondary_y=False)
+        fig.update_yaxes(title_text="剩餘本金（萬）", secondary_y=True)
         st.plotly_chart(fig, use_container_width=True)
 
         with st.expander("📑 完整逐月攤還表（前 24 期預覽）"):
             st.dataframe(
                 sched.head(24).style.format(
                     {
-                        "月付金": "{:,.0f}",
-                        "利息": "{:,.0f}",
-                        "本金": "{:,.0f}",
-                        "剩餘本金": "{:,.0f}",
+                        "月付金": lambda x: fmt_wan(x),
+                        "利息": lambda x: fmt_wan(x),
+                        "本金": lambda x: fmt_wan(x),
+                        "剩餘本金": lambda x: fmt_wan(x),
                     }
                 ),
                 use_container_width=True,
@@ -489,23 +526,23 @@ with sub_loan:
         fig2.add_trace(
             go.Bar(
                 x=df_rate["利率情境"],
-                y=df_rate["新月付金"],
+                y=df_rate["新月付金"] / 10_000,
                 marker_color=["#3498DB" if d <= 0 else "#E67E22" if d <= 0.01 else "#C0392B" for d in deltas],
-                text=[f"NT$ {v:,.0f}" for v in df_rate["新月付金"]],
+                text=[f"{fmt_wan(v)}" for v in df_rate["新月付金"]],
                 textposition="outside",
                 name="月付金",
             )
         )
         fig2.update_layout(
             xaxis_title="利率情境",
-            yaxis_title="月付金（元）",
+            yaxis_title="月付金（萬）",
             height=400,
             margin=dict(t=20, b=40),
         )
         st.plotly_chart(fig2, use_container_width=True)
         st.dataframe(
             df_rate.style.format(
-                {"新月付金": "{:,.0f}", "月付增加": "{:,.0f}", "佔月收入比": "{:.1%}"}
+                {"新月付金": lambda x: fmt_wan(x), "月付增加": lambda x: fmt_wan(x), "佔月收入比": "{:.1%}"}
             ),
             use_container_width=True,
             hide_index=True,
@@ -528,11 +565,11 @@ with sub_cash:
     burden_post = post_grace_payment / total_monthly_income if total_monthly_income > 0 else 0
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("寬限期月現金流", f"NT$ {cf_grace:,.0f}",
+    c1.metric("寬限期月現金流", f"{fmt_wan(cf_grace)}",
               delta_color="normal" if cf_grace >= 0 else "inverse")
-    c2.metric("寬限後月現金流", f"NT$ {cf_post:,.0f}",
+    c2.metric("寬限後月現金流", f"{fmt_wan(cf_post)}",
               delta_color="normal" if cf_post >= 0 else "inverse")
-    c3.metric("加權平均月現金流", f"NT$ {cf_avg:,.0f}",
+    c3.metric("加權平均月現金流", f"{fmt_wan(cf_avg)}",
               delta_color="normal" if cf_avg >= 0 else "inverse")
 
     b1, b2, b3 = st.columns(3)
@@ -561,14 +598,14 @@ with sub_cash:
     fig3 = go.Figure(
         go.Bar(
             x=cf_breakdown["項目"],
-            y=cf_breakdown["金額"],
+            y=cf_breakdown["金額"] / 10_000,
             marker_color=["#27AE60", "#E67E22", "#E67E22", "#3498DB", "#C0392B"],
-            text=[f"NT$ {v:,.0f}" for v in cf_breakdown["金額"]],
+            text=[f"{fmt_wan(v)}" for v in cf_breakdown["金額"]],
             textposition="outside",
         )
     )
     fig3.update_layout(
-        yaxis_title="金額（元）",
+        yaxis_title="金額（萬）",
         height=380,
         margin=dict(t=20, b=40),
     )
@@ -590,17 +627,17 @@ with sub_cash:
     fig4.add_trace(
         go.Scatter(
             x=years_range,
-            y=cumulative,
+            y=[c / 10_000 for c in cumulative],
             mode="lines+markers",
             fill="tozeroy",
             line=dict(color="#16A085", width=3),
-            name="累積現金流",
+            name="累積現金流（萬）",
         )
     )
     fig4.add_hline(y=0, line_dash="dash", line_color="red")
     fig4.update_layout(
         xaxis_title="貸款年度",
-        yaxis_title="累積淨現金流（元）",
+        yaxis_title="累積淨現金流（萬）",
         height=400,
         margin=dict(t=20, b=40),
     )
@@ -614,16 +651,16 @@ with sub_cash:
     income_gap = max(required_income - total_monthly_income, 0)
 
     r1, r2, r3 = st.columns(3)
-    r1.metric("每月總負債（含房貸）", f"NT$ {total_monthly_debt:,.0f}")
-    r2.metric("通過 70% DTI 所需月收入", f"NT$ {required_income:,.0f}")
+    r1.metric("每月總負債（含房貸）", f"{fmt_wan(total_monthly_debt)}")
+    r2.metric("通過 70% DTI 所需月收入", f"{fmt_wan(required_income)}")
     r3.metric(
         "收入缺口",
-        f"NT$ {income_gap:,.0f}",
+        f"{fmt_wan(income_gap)}",
         delta_color="inverse" if income_gap > 0 else "normal",
     )
     if income_gap > 0:
         st.warning(
-            f"⚠️ 你還需要每月再多 **NT$ {income_gap:,.0f}** 的收入，"
+            f"⚠️ 你還需要每月再多 **{fmt_wan(income_gap)}** 的收入，"
             "才能讓 DTI 剛好壓在 70% 紅線下。建議拉副業、提高薪資、或縮減房貸總額／延長年限。"
         )
     else:
@@ -644,11 +681,11 @@ with sub_invest:
     payback_years = total_investment / annual_net if annual_net > 0 else float("inf")
 
     i1, i2, i3, i4 = st.columns(4)
-    i1.metric("年租金收入", f"NT$ {annual_rent:,.0f}")
+    i1.metric("年租金收入", f"{fmt_wan(annual_rent)}")
     i2.metric("租金收益率", f"{rental_yield * 100:.2f}%")
     i3.metric(
         "月淨現金流",
-        f"NT$ {monthly_net:,.0f}",
+        f"{fmt_wan(monthly_net)}",
         delta_color="normal" if monthly_net >= 0 else "inverse",
     )
     i4.metric(
@@ -659,11 +696,11 @@ with sub_invest:
 
     if monthly_net >= 0:
         st.success(
-            f"✅ 月淨收益 +NT$ {monthly_net:,.0f}，房客在幫你付房貸還有剩，標準的『生錢資產』。"
+            f"✅ 月淨收益 +{fmt_wan(monthly_net)}，房客在幫你付房貸還有剩，標準的『生錢資產』。"
         )
     else:
         st.warning(
-            f"⚠️ 月淨現金流 NT$ {monthly_net:,.0f}（為負），"
+            f"⚠️ 月淨現金流 {fmt_wan(monthly_net)}（為負），"
             "你每月還要倒貼，這是『負現金流物件』，需靠未來增值才有報酬。"
         )
 
@@ -676,28 +713,28 @@ with sub_invest:
     fig5 = go.Figure()
     fig5.add_trace(
         go.Scatter(
-            x=years_list, y=optimistic, mode="lines+markers",
+            x=years_list, y=[v / 10_000 for v in optimistic], mode="lines+markers",
             name="樂觀 +4.5%/年",
             line=dict(color="#27AE60", width=3),
         )
     )
     fig5.add_trace(
         go.Scatter(
-            x=years_list, y=realistic, mode="lines+markers",
+            x=years_list, y=[v / 10_000 for v in realistic], mode="lines+markers",
             name="現實 +3.0%/年",
             line=dict(color="#2980B9", width=3),
         )
     )
     fig5.add_trace(
         go.Scatter(
-            x=years_list, y=pessimistic, mode="lines+markers",
+            x=years_list, y=[v / 10_000 for v in pessimistic], mode="lines+markers",
             name="悲觀 +2.0%/年",
             line=dict(color="#C0392B", width=3),
         )
     )
     fig5.update_layout(
         xaxis_title="持有年數",
-        yaxis_title="預估房價（元）",
+        yaxis_title="預估房價（萬）",
         height=420,
         margin=dict(t=20, b=40),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
@@ -707,9 +744,9 @@ with sub_invest:
     df_price = pd.DataFrame(
         {
             "持有年數": years_list,
-            "樂觀(4.5%)": [f"NT$ {v:,.0f}" for v in optimistic],
-            "現實(3.0%)": [f"NT$ {v:,.0f}" for v in realistic],
-            "悲觀(2.0%)": [f"NT$ {v:,.0f}" for v in pessimistic],
+            "樂觀(4.5%)": [f"{fmt_wan(v)}" for v in optimistic],
+            "現實(3.0%)": [f"{fmt_wan(v)}" for v in realistic],
+            "悲觀(2.0%)": [f"{fmt_wan(v)}" for v in pessimistic],
         }
     )
     st.dataframe(df_price, use_container_width=True, hide_index=True)
@@ -731,8 +768,8 @@ with sub_risk:
     )
 
     v1, v2, v3 = st.columns(3)
-    v1.metric("月總固定成本（房貸+管理費）", f"NT$ {monthly_cost:,.0f}")
-    v2.metric("建議空租準備金", f"NT$ {required_vacancy_reserve:,.0f}")
+    v1.metric("月總固定成本（房貸+管理費）", f"{fmt_wan(monthly_cost)}")
+    v2.metric("建議空租準備金", f"{fmt_wan(required_vacancy_reserve)}")
     v3.metric(
         "準備金充足度",
         "∞" if reserve_adequacy == float("inf") else f"{reserve_adequacy * 100:.1f}%",
@@ -741,7 +778,7 @@ with sub_risk:
         st.success("✅ 現有預備金足以撐過預估空租期。")
     else:
         st.warning(
-            f"⚠️ 預備金缺口 NT$ {required_vacancy_reserve - cash_reserve:,.0f}，"
+            f"⚠️ 預備金缺口 {fmt_wan(required_vacancy_reserve - cash_reserve)}，"
             "建議補強現金存款再進場。"
         )
 
@@ -768,14 +805,14 @@ with sub_risk:
     fig6.add_trace(
         go.Bar(
             x=df_rs["情境"],
-            y=df_rs["新月付金"],
+            y=df_rs["新月付金"] / 10_000,
             marker_color=["#3498DB", "#E67E22", "#C0392B"],
-            text=[f"NT$ {v:,.0f}" for v in df_rs["新月付金"]],
+            text=[f"{fmt_wan(v)}" for v in df_rs["新月付金"]],
             textposition="outside",
         )
     )
     fig6.update_layout(
-        yaxis_title="月付金（元）",
+        yaxis_title="月付金（萬）",
         height=360,
         margin=dict(t=20, b=40),
     )
@@ -785,7 +822,7 @@ with sub_risk:
     df_rs_display["新利率"] = df_rs_display["新利率"].apply(lambda x: f"{x * 100:.2f}%")
     st.dataframe(
         df_rs_display.style.format(
-            {"新月付金": "{:,.0f}", "增加金額": "{:,.0f}"}
+            {"新月付金": lambda x: fmt_wan(x), "增加金額": lambda x: fmt_wan(x)}
         ),
         use_container_width=True,
         hide_index=True,
@@ -811,21 +848,21 @@ with sub_risk:
     fig7.add_trace(
         go.Bar(
             x=df_inc["情境"],
-            y=df_inc["新月現金流"],
+            y=df_inc["新月現金流"] / 10_000,
             marker_color=["#27AE60" if v > 0 else "#C0392B" for v in df_inc["新月現金流"]],
-            text=[f"NT$ {v:,.0f}" for v in df_inc["新月現金流"]],
+            text=[f"{fmt_wan(v)}" for v in df_inc["新月現金流"]],
             textposition="outside",
         )
     )
     fig7.add_hline(y=0, line_dash="dash", line_color="red")
     fig7.update_layout(
-        yaxis_title="月現金流（元）",
+        yaxis_title="月現金流（萬）",
         height=360,
         margin=dict(t=20, b=40),
     )
     st.plotly_chart(fig7, use_container_width=True)
     st.dataframe(
-        df_inc.style.format({"新月收入": "{:,.0f}", "新月現金流": "{:,.0f}"}),
+        df_inc.style.format({"新月收入": lambda x: fmt_wan(x), "新月現金流": lambda x: fmt_wan(x)}),
         use_container_width=True,
         hide_index=True,
     )
@@ -847,9 +884,9 @@ with sub_lazy:
     safety_index = real_rent / post_grace_payment if post_grace_payment > 0 else 0
 
     l1, l2, l3 = st.columns(3)
-    l1.metric("實拿租金（打折後）", f"NT$ {real_rent:,.0f}")
-    l2.metric("月總成本（房貸+開銷+維修）", f"NT$ {monthly_total_cost_lazy:,.0f}")
-    l3.metric("底線租金（上架不能低於）", f"NT$ {breakeven_rent:,.0f}")
+    l1.metric("實拿租金（打折後）", f"{fmt_wan(real_rent)}")
+    l2.metric("月總成本（房貸+開銷+維修）", f"{fmt_wan(monthly_total_cost_lazy)}")
+    l3.metric("底線租金（上架不能低於）", f"{fmt_wan(breakeven_rent)}")
 
     st.markdown("##### 🎯 安全指數（≥1.2 才能做，越高越舒服）")
 
@@ -882,7 +919,7 @@ with sub_lazy:
     if safety_index >= 1.2 and rent >= breakeven_rent:
         st.success(
             f"✔ **安全（可上架）** — 安全指數 {safety_index:.2f}（≥1.2），"
-            f"且實際租金 NT$ {rent:,.0f} ≥ 底線租金 NT$ {breakeven_rent:,.0f}。"
+            f"且實際租金 {fmt_wan(rent)} ≥ 底線租金 {fmt_wan(breakeven_rent)}。"
         )
     elif safety_index >= 1.0:
         st.warning(
@@ -1238,14 +1275,14 @@ with tab_used:
     monthly_cost_used = annual_cost / 12
 
     rc1, rc2, rc3 = st.columns(3)
-    rc1.metric("總投入成本", f"NT$ {total_cost:,.0f}")
-    rc2.metric("每年居住成本", f"NT$ {annual_cost:,.0f}")
-    rc3.metric("每月居住成本", f"NT$ {monthly_cost_used:,.0f}")
+    rc1.metric("總投入成本", f"{fmt_wan(total_cost)}")
+    rc2.metric("每年居住成本", f"{fmt_wan(annual_cost)}")
+    rc3.metric("每月居住成本", f"{fmt_wan(monthly_cost_used)}")
 
     if is_red or deny_hits:
         st.error(
             f"❌ **此物件已觸發紅線警報，不建議出價。** "
-            f"即使每月成本看起來 NT$ {monthly_cost_used:,.0f}，"
+            f"即使每月成本看起來 {fmt_wan(monthly_cost_used)}，"
             "未來流動性與轉手損失會把你的報酬率吃光。"
         )
     elif diag_messages:
@@ -1256,7 +1293,7 @@ with tab_used:
         )
     else:
         st.success(
-            f"✅ 物件條件過關，每月真實居住成本 NT$ {monthly_cost_used:,.0f}。"
+            f"✅ 物件條件過關，每月真實居住成本 {fmt_wan(monthly_cost_used)}。"
             "出價時建議：**月成本 ≤ 同區租金行情**，才符合『買比租划算』的進場原則。"
         )
 
@@ -1387,8 +1424,8 @@ with tab_inspect:
             st.warning(
                 f"⚠️ **發現重大修繕成本項目：{', '.join(critical_issues)}**\n\n"
                 "請將此修繕費用計入買房總成本，並作為與房仲、屋主強力議價的籌碼：\n\n"
-                "- **漏水/壁癌**：抓漏 + 防水工程約 NT$ 5~15 萬／處\n"
-                "- **結構裂縫**：需鑑定報告，輕者補強約 NT$ 10~30 萬，重者建議放棄\n"
+                "- **漏水/壁癌**：抓漏 + 防水工程約 5~15 萬／處\n"
+                "- **結構裂縫**：需鑑定報告，輕者補強約 10~30 萬，重者建議放棄\n"
                 "- **承重牆破壞**：違法且有結構風險，**強烈建議放棄此案**\n"
                 "- **地面/牆面不平**：地基沉陷可能，務必請結構技師鑑定\n\n"
                 "**👉 議價公式：總價 -（修繕成本 × 1.5）= 你的出價上限。**"
@@ -1700,16 +1737,16 @@ with sub_price:
     st.markdown("---")
     st.markdown("##### 💰 估價結果")
     mc1, mc2, mc3 = st.columns(3)
-    mc1.metric("你的目標總價", f"NT$ {total_target_price:,.0f}")
+    mc1.metric("你的目標總價", f"{fmt_wan(total_target_price)}")
     mc2.metric(
         "同棟最高總價",
-        f"NT$ {total_max_price:,.0f}",
-        delta=f"差價 NT$ {potential_gap:,.0f}",
+        f"{fmt_wan(total_max_price)}",
+        delta=f"差價 {fmt_wan(potential_gap)}",
         delta_color="normal" if potential_gap > 0 else "off",
     )
     mc3.metric(
         "預估潛在增貸空間",
-        f"NT$ {potential_gap:,.0f}",
+        f"{fmt_wan(potential_gap)}",
         delta=f"-{discount_pct:.1f}% vs 最高價" if diff_per_ping > 0 else "0%",
         delta_color="inverse" if diff_per_ping < 0 else "normal",
         help="你比同棟最高價便宜多少，就是未來銀行可能讓你『搬出來』的錢",
@@ -1718,10 +1755,10 @@ with sub_price:
     if potential_gap > 0:
         st.info(
             f"📌 **金句：『銀行估價看整棟，不看單戶！』**\n\n"
-            f"你的入手價比同棟最高價低 **NT$ {potential_gap:,.0f}**"
+            f"你的入手價比同棟最高價低 **{fmt_wan(potential_gap)}**"
             f"（{discount_pct:.1f}%），這部分就是未來能向銀行『搬出來的錢（增貸額度）』。\n\n"
             "**🧮 實戰換算（以增貸 80% 計）：**\n"
-            f"- 預估可增貸金額：**NT$ {potential_gap * 0.8:,.0f}**\n"
+            f"- 預估可增貸金額：**{fmt_wan(potential_gap * 0.8)}**\n"
             "- 用途：投入 0050 / 保單 / 下一間房頭期款（依富邦增貸 SOP 過水）\n\n"
             "**👉 結論：價差越大越好。挑同棟『最便宜那戶』，等於挑了一個現成的增貸金雞母。**"
         )
@@ -1745,14 +1782,14 @@ with sub_price:
     fig_price.add_trace(
         go.Bar(
             x=["同棟最高總價", "你的目標總價"],
-            y=[total_max_price, total_target_price],
+            y=[total_max_price / 10_000, total_target_price / 10_000],
             marker_color=["#C0392B", "#27AE60"],
-            text=[f"NT$ {total_max_price:,.0f}", f"NT$ {total_target_price:,.0f}"],
+            text=[f"{fmt_wan(total_max_price)}", f"{fmt_wan(total_target_price)}"],
             textposition="outside",
         )
     )
     fig_price.update_layout(
-        yaxis_title="總價（元）",
+        yaxis_title="總價（萬）",
         height=380,
         margin=dict(t=30, b=40),
     )
@@ -1840,7 +1877,7 @@ with sub_tenant:
             f"⚠️ **租客評分 {tenant_score} 分（< 75 分通過線）。**\n\n"
             "**鐵則：寧可空租一個月，也不要租給麻煩客！**\n\n"
             "把問題租客請進來的代價：\n"
-            "- 拖欠房租 → 訴訟成本 NT$ 20,000+，跑流程 6 個月起\n"
+            "- 拖欠房租 → 訴訟成本 2 萬元+，跑流程 6 個月起\n"
             "- 屋況破壞 → 修繕費吃掉押金還倒貼\n"
             "- 蟑螂租客（占住不走）→ 損失最高可達一年租金\n"
             "- 鄰居檢舉、社區糾紛 → 被列管後物件難轉手\n\n"
