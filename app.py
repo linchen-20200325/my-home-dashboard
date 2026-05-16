@@ -31,8 +31,10 @@ def pmt(monthly_rate: float, n_periods: int, principal: float) -> float:
     return principal * monthly_rate * factor / (factor - 1)
 
 
-def fmt_wan(amount_ntd: float, decimals: int = 1) -> str:
-    """把 NT$ 金額格式化為『X.X 萬』。"""
+def fmt_wan(amount_ntd: float, decimals: int | None = None) -> str:
+    """把 NT$ 金額格式化為『X.X 萬』。<1 萬時自動顯示 2 位小數以保留千元精度。"""
+    if decimals is None:
+        decimals = 2 if 0 < abs(amount_ntd) < 10_000 else 1
     return f"{amount_ntd / 10_000:,.{decimals}f} 萬"
 
 
@@ -110,9 +112,9 @@ with st.sidebar:
             "③ 每月其他固定收入（兼職、租金、股息、利息）",
             0.0,
             value=0.0,
-            step=0.1,
-            format="%.1f",
-            help="本薪以外、每月或可換算成每月的穩定現金流。一次性收入不要填。單位：萬。",
+            step=0.05,
+            format="%.2f",
+            help="本薪以外、每月或可換算成每月的穩定現金流。一次性收入不要填。單位：萬（0.05 = 500 元）。",
         ) * 10_000
         st.markdown(
             f"**合計每月可用收入："
@@ -133,17 +135,17 @@ with st.sidebar:
             "孝親費／長輩生活費",
             0.0,
             value=0.0,
-            step=0.1,
-            format="%.1f",
-            help="每月固定給父母、長輩的金額。若是不定期才給，請以全年總額 ÷12 換算。",
+            step=0.05,
+            format="%.2f",
+            help="每月固定給父母、長輩的金額。若是不定期才給，請以全年總額 ÷12 換算。單位：萬（0.05 = 500 元）。",
         ) * 10_000
         monthly_staff = st.number_input(
             "雇用人員薪資（家事員／看護／保母）",
             0.0,
             value=0.0,
-            step=0.1,
-            format="%.1f",
-            help="支付給家事服務員、看護、保母、家教等人員的固定月薪。",
+            step=0.05,
+            format="%.2f",
+            help="支付給家事服務員、看護、保母、家教等人員的固定月薪。單位：萬（0.05 = 500 元）。",
         ) * 10_000
         monthly_insurance = st.number_input(
             "保險費（月攤）",
@@ -157,9 +159,9 @@ with st.sidebar:
             "學費（自己進修／子女教育）",
             0.0,
             value=0.0,
-            step=0.1,
-            format="%.1f",
-            help="自己的進修課程、子女學費、補習費、才藝班等教育支出。一學期繳一次的請 ÷月份數。",
+            step=0.05,
+            format="%.2f",
+            help="自己的進修課程、子女學費、補習費、才藝班等教育支出。一學期繳一次的請 ÷月份數。單位：萬（0.05 = 500 元）。",
         ) * 10_000
         monthly_living = st.number_input(
             "生活開銷（食衣行育樂）",
@@ -173,9 +175,9 @@ with st.sidebar:
             "壞債支出（信貸／車貸／卡循／現金卡）",
             0.0,
             value=1.0,
-            step=0.1,
-            format="%.1f",
-            help="每月需固定還款的高利率負債：信用貸款、車貸、信用卡循環利息、現金卡。房貸不算。",
+            step=0.05,
+            format="%.2f",
+            help="每月需固定還款的高利率負債：信用貸款、車貸、信用卡循環利息、現金卡。房貸不算。單位：萬（0.05 = 500 元）。",
         ) * 10_000
         st.markdown(
             f"**合計每月固定支出："
