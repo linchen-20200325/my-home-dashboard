@@ -83,8 +83,8 @@ with st.sidebar:
         age = st.number_input("目前年齡", 18, 80, 30, 1)
         loan_years = st.number_input("預計申請貸款年限（年）", 10, 40, 30, 5)
 
-    with st.expander("💵 收支金流", expanded=True):
-        st.caption("以下三項收入分開填寫，系統會自動加總（獎金÷12 均攤回每月），請勿重複計入。")
+    with st.expander("💰 每月收入", expanded=True):
+        st.caption("三項收入分開填寫，系統會自動加總（獎金÷12 均攤回每月），請勿重複計入。")
         monthly_salary = st.number_input(
             "① 每月本薪（稅後實領，不含獎金）",
             0,
@@ -106,19 +106,29 @@ with st.sidebar:
             step=1_000,
             help="本薪以外、每月或可換算成每月的穩定現金流（兼差、副業、房租收入、配息）。一次性收入不要填。",
         )
+        st.markdown(
+            f"**合計每月可用收入：NT$ "
+            f"{monthly_salary + annual_bonus / 12 + other_income:,.0f}**"
+        )
+
+    with st.expander("💸 每月支出（不含房貸）", expanded=True):
+        st.caption("房貸另在『基本資料』分頁的房屋條件中計算，這裡只填非房貸的固定支出。")
         monthly_bad_debt = st.number_input(
-            "每月壞債支出（信貸/車貸/卡循）",
+            "壞債支出（信貸／車貸／卡循／現金卡）",
             0,
             value=10_000,
             step=1_000,
-            help="每月需固定還款的高利率負債：信用貸款、車貸、信用卡循環利息、現金卡。房貸不算（房貸另在房屋條件填寫）。",
+            help="每月需固定還款的高利率負債：信用貸款、車貸、信用卡循環利息、現金卡。房貸不算。",
         )
         monthly_living = st.number_input(
-            "每月生活開銷（含保險娛樂）",
+            "生活開銷（含保險娛樂、孝親費）",
             0,
             value=25_000,
             step=1_000,
             help="日常吃喝、交通、水電瓦斯、通訊、保險費月攤、娛樂、孝親費等扣除房貸與壞債後的所有開銷。",
+        )
+        st.markdown(
+            f"**合計每月固定支出：NT$ {monthly_bad_debt + monthly_living:,.0f}**"
         )
 
     with st.expander("🏦 財力證明", expanded=False):
