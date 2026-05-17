@@ -16,7 +16,10 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import NamedTuple
 
-from app.models.constants import ELEVATOR_RATIO_DANGER
+from app.models.constants import (
+    ELEVATOR_RATIO_DANGER,
+    HEALTHY_ELEVATOR_RATIO_MAX,
+)
 from app.models.property import PropertySpec
 
 
@@ -57,12 +60,9 @@ def classify_escrow(escrow_type: EscrowType) -> EscrowSeverity:
 # ============================================================
 # B. 梯戶比 3 級分級（Ch.2 — 比 Ch.10 二元更細）
 # ============================================================
-# 健康上限：ratio ≤ 此值 → HEALTHY
+# 健康上限：ratio ≤ HEALTHY_ELEVATOR_RATIO_MAX → HEALTHY
 # 警戒上限：HEALTHY_MAX < ratio ≤ DANGER（即 ELEVATOR_RATIO_DANGER） → BORDERLINE
 # 危險：ratio > DANGER → DANGEROUS（與 Ch.10 strict-gt 一致）
-HEALTHY_ELEVATOR_RATIO_MAX: float = 2.5
-
-
 class ElevatorRatioGrade(str, Enum):
     """梯戶比 3 級分類。
 

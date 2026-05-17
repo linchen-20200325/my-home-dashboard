@@ -18,18 +18,15 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import NamedTuple
 
-from app.models.constants import EXIT_AGE_RED_LINE_YEARS
-
-
-# ============================================================
-# 服務層內部常數（暫不上移 SSOT，視未來重用而定）
-# ============================================================
-RC_DURABILITY_YEARS: int = 50               # 銀行 RC 結構耐用年限
-BANK_MAX_LOAN_YEARS_PER_PROPERTY: int = 30  # 房貸年期天花板
-NEGOTIATION_SOP_TOTAL_STEPS: int = 7
-NEGOTIATION_SOP_INCOMPLETE_THRESHOLD: int = 5  # < 此值為 NOT_READY
-RESIDENCY_EVIDENCE_TOTAL: int = 5
-RESIDENCY_EVIDENCE_GAPPED_THRESHOLD: int = 3   # < 此值為 INSUFFICIENT
+from app.models.constants import (
+    BANK_MAX_LOAN_YEARS_PER_PROPERTY,
+    EXIT_AGE_RED_LINE_YEARS,
+    NEGOTIATION_SOP_INCOMPLETE_THRESHOLD,
+    NEGOTIATION_SOP_TOTAL_STEPS,
+    RC_DURABILITY_YEARS,
+    RESIDENCY_EVIDENCE_GAPPED_THRESHOLD,
+    RESIDENCY_EVIDENCE_TOTAL,
+)
 
 
 # ============================================================

@@ -70,6 +70,26 @@ streamlit run main.py
    （不填的話 Ch.9 仍可載入，只是無法對話）
 5. Deploy
 
+### Docker（self-hosted）
+
+```bash
+# Build image（context 用 .dockerignore 自動排除 tests / _legacy / secrets）
+docker build -t real-estate-app .
+
+# Run（mount secrets 或直接 env var 注入 OpenAI key）
+docker run -p 8501:8501 \
+    -e OPENAI_API_KEY="sk-proj-..." \
+    real-estate-app
+
+# 開瀏覽器：http://localhost:8501
+```
+
+Image 設計：
+- `python:3.11-slim` 基底，與 Streamlit Cloud 同版本
+- 多階段 layer cache：`requirements.txt` 變動才重跑 `pip install`
+- **非 root 使用者**執行（最小權限）
+- **HEALTHCHECK** 每 30 秒 ping `/_stcore/health`，orchestrator（k8s / docker swarm）可自動恢復
+
 ---
 
 ## 🏗️ 架構（四層分層）

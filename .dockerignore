@@ -1,0 +1,46 @@
+# Docker build context 排除 — 縮小 image 並避免敏感檔案外洩
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Local config / secrets
+.env
+.streamlit/secrets.toml
+
+# Git / IDE
+.git/
+.gitignore
+.gitattributes
+.github/
+.vscode/
+.idea/
+
+# Tests + dev tooling（image runtime 不需要）
+tests/
+requirements-dev.txt
+pytest.ini
+
+# Legacy（已退役、不參與運行）
+_legacy/
+
+# 文件 / 開發資產
+*.md
+docs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 自己（避免遞迴 copy）
+Dockerfile
+.dockerignore

@@ -25,6 +25,9 @@ DTI_DANGER_RATIO: Final[float] = 0.70
 # 預估未來入門收租房的房貸月付金基準（Ch.1 DTI 試算使用）。
 ESTIMATED_FUTURE_MORTGAGE_NTD: Final[int] = 40_000
 
+# 淨現金流『可投資緩衝』門檻 — 低於此值視為 LOW_BUFFER（services.cashflow）。
+LOW_BUFFER_THRESHOLD_NTD: Final[int] = 20_000
+
 
 # ============================================================
 # 2. 物件硬性紅線（Ch.2 / Ch.5 / Ch.7 / Ch.10）
@@ -42,6 +45,15 @@ EXIT_AGE_RED_LINE_YEARS: Final[int] = 35
 # 央行豪宅線（雙北）— 超過此總價適用豪宅限貸令、貸款成數大砍。
 # 其他六都 6,000 萬 / 其他縣市 4,000 萬（暫不細分，由 service 層處理）。
 MANSION_PRICE_TAIPEI_NTD: Final[int] = 70_000_000
+
+# 銀行 RC 結構耐用年限（影響老屋脫手紅線推演）。
+RC_DURABILITY_YEARS: Final[int] = 50
+
+# 房貸年期天花板（即便屋齡 0 銀行也不會貸超過此值）。
+BANK_MAX_LOAN_YEARS_PER_PROPERTY: Final[int] = 30
+
+# 梯戶比『健康』上限 — ≤ 此值為 HEALTHY，介於此與 ELEVATOR_RATIO_DANGER 為 BORDERLINE。
+HEALTHY_ELEVATOR_RATIO_MAX: Final[float] = 2.5
 
 
 # ============================================================
@@ -64,6 +76,11 @@ AGE_COEFFICIENT_MAP: Final[dict[str, float]] = {
 # 空租天數紅線 — 超過此天數啟動階梯式降價 SOP。
 VACANCY_DAYS_DANGER: Final[int] = 20
 
+# 空租階梯式降價三階段（以建議租金為基準）。
+VACANCY_STEP1_DISCOUNT: Final[float] = 0.95   # 先降 5%
+VACANCY_STEP2_DISCOUNT: Final[float] = 0.92   # 再降 3%（累計 8%）
+VACANCY_FLOOR_DISCOUNT: Final[float] = 0.85   # 極限：不可低於原價 15%
+
 
 # ============================================================
 # 4. 租客七道信用防線（Ch.3）
@@ -72,6 +89,20 @@ TENANT_CHECK_POINTS_PER_ITEM: Final[int] = 15
 TENANT_CHECK_TOTAL_MAX: Final[int] = 105       # 7 × 15
 TENANT_CHECK_PASS_THRESHOLD: Final[int] = 75
 TENANT_CHECK_EXCELLENT_THRESHOLD: Final[int] = 90
+
+# ===== 議價戰術 multiplier（strategy_negotiation）=====
+NEGOTIATION_ANCHOR_DISCOUNT: Final[float] = 0.95   # 戰術 1：定錨單價（廣告戶 × 0.95）
+NEGOTIATION_KILL_SHOT_DISCOUNT: Final[float] = 0.90  # 獵物確認：私人 lien × 0.90
+FINAL_OFFER_DEFAULT_DISCOUNT: Final[float] = 0.85  # 戰術 3：開價 × 0.85
+FINAL_OFFER_DEFAULT_ROUNDOFF_WAN: Final[float] = 50.0  # 戰術 3：再砍 50 萬零頭
+
+# ===== 議價前必做 SOP（Ch.5 區塊二）=====
+NEGOTIATION_SOP_TOTAL_STEPS: Final[int] = 7
+NEGOTIATION_SOP_INCOMPLETE_THRESHOLD: Final[int] = 5  # < 此值為 NOT_READY
+
+# ===== 自用 5 年免稅鐵證查核（Ch.7）=====
+RESIDENCY_EVIDENCE_TOTAL: Final[int] = 5
+RESIDENCY_EVIDENCE_GAPPED_THRESHOLD: Final[int] = 3   # < 此值為 INSUFFICIENT
 
 
 # ============================================================

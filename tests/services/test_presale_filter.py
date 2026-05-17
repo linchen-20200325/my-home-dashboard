@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
+from app.models.constants import HEALTHY_ELEVATOR_RATIO_MAX
 from app.models.property import PropertySpec, PropertyType
 from app.services.presale_filter import (
-    HEALTHY_ELEVATOR_RATIO_MAX,
     ContractLandmineVerdict,
     ElevatorRatioGrade,
     EscrowSeverity,

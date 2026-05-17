@@ -13,25 +13,16 @@ from typing import NamedTuple
 
 from app.models.constants import (
     AGE_COEFFICIENT_MAP,
+    FINAL_OFFER_DEFAULT_DISCOUNT,
+    FINAL_OFFER_DEFAULT_ROUNDOFF_WAN,
     FLOOR_COEFFICIENT_MAP,
+    NEGOTIATION_ANCHOR_DISCOUNT,
+    NEGOTIATION_KILL_SHOT_DISCOUNT,
+    VACANCY_FLOOR_DISCOUNT,
+    VACANCY_STEP1_DISCOUNT,
+    VACANCY_STEP2_DISCOUNT,
 )
 from app.models.tenant import RentalPricingInput, RentalPricingResult
-
-
-# ============================================================
-# 議價戰術 multiplier — 未來若多處引用可上移到 constants.py
-# ============================================================
-NEGOTIATION_ANCHOR_DISCOUNT: float = 0.95   # 戰術 1：定錨單價（廣告戶 × 0.95）
-NEGOTIATION_KILL_SHOT_DISCOUNT: float = 0.90  # 獵物確認：私人 lien × 0.90
-FINAL_OFFER_DEFAULT_DISCOUNT: float = 0.85  # 戰術 3：開價 × 0.85
-FINAL_OFFER_DEFAULT_ROUNDOFF_WAN: float = 50.0  # 戰術 3：再砍 50 萬零頭
-
-# ============================================================
-# 空租階梯式降價百分比
-# ============================================================
-STEP1_DISCOUNT: float = 0.95   # 先降 5%
-STEP2_DISCOUNT: float = 0.92   # 若無效再降 3% → 累計 8%
-FLOOR_DISCOUNT: float = 0.85   # 極限不可低於原價 15%
 
 
 # ============================================================
@@ -77,9 +68,9 @@ def vacancy_stepdown_prices(suggested_rent_ntd: float) -> VacancyStepdownTiers:
     所有百分比都以『建議極限租金』為基準（非上一階累計）。
     """
     return VacancyStepdownTiers(
-        step1_5pct_off=suggested_rent_ntd * STEP1_DISCOUNT,
-        step2_8pct_off=suggested_rent_ntd * STEP2_DISCOUNT,
-        floor_15pct_off=suggested_rent_ntd * FLOOR_DISCOUNT,
+        step1_5pct_off=suggested_rent_ntd * VACANCY_STEP1_DISCOUNT,
+        step2_8pct_off=suggested_rent_ntd * VACANCY_STEP2_DISCOUNT,
+        floor_15pct_off=suggested_rent_ntd * VACANCY_FLOOR_DISCOUNT,
     )
 
 

@@ -11,11 +11,8 @@ import math
 import pytest
 
 from app.models.cashflow import CashflowInput, CashflowSeverity, CashflowSnapshot
-from app.services.cashflow import (
-    LOW_BUFFER_THRESHOLD_NTD,
-    _classify_severity,
-    diagnose_cashflow,
-)
+from app.models.constants import LOW_BUFFER_THRESHOLD_NTD
+from app.services.cashflow import _classify_severity, diagnose_cashflow
 
 
 pytestmark = [pytest.mark.services]

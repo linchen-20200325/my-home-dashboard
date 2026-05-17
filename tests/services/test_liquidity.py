@@ -11,14 +11,16 @@ from __future__ import annotations
 
 import pytest
 
-from app.models.constants import EXIT_AGE_RED_LINE_YEARS
-from app.services.liquidity import (
+from app.models.constants import (
     BANK_MAX_LOAN_YEARS_PER_PROPERTY,
+    EXIT_AGE_RED_LINE_YEARS,
+    RC_DURABILITY_YEARS,
+)
+from app.services.liquidity import (
     ExitAgeResult,
     LiquidityTrapVerdict,
     NegotiationReadiness,
     NegotiationSopVerdict,
-    RC_DURABILITY_YEARS,
     ResidencyStrength,
     ResidencyVerdict,
     calculate_exit_age,

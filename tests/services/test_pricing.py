@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from app.models.tenant import RentalPricingInput, RentalPricingResult
-from app.services.pricing import (
+from app.models.constants import (
     FINAL_OFFER_DEFAULT_DISCOUNT,
     FINAL_OFFER_DEFAULT_ROUNDOFF_WAN,
     NEGOTIATION_ANCHOR_DISCOUNT,
     NEGOTIATION_KILL_SHOT_DISCOUNT,
+)
+from app.models.tenant import RentalPricingInput, RentalPricingResult
+from app.services.pricing import (
     VacancyStepdownTiers,
     calculate_rental_pricing,
     final_offer_wan,

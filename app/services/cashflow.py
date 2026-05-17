@@ -17,11 +17,8 @@ from app.models.cashflow import (
 from app.models.constants import (
     DTI_DANGER_RATIO,
     ESTIMATED_FUTURE_MORTGAGE_NTD,
+    LOW_BUFFER_THRESHOLD_NTD,
 )
-
-# 淨現金流『可投資緩衝』門檻 — 學長標準：低於此值代表沒餘力投資。
-# 未來若多處引用可上移到 app.models.constants。
-LOW_BUFFER_THRESHOLD_NTD: int = 20_000
 
 
 def diagnose_cashflow(payload: CashflowInput) -> CashflowSnapshot:
