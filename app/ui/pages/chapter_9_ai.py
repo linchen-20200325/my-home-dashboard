@@ -16,17 +16,22 @@ from __future__ import annotations
 
 import streamlit as st
 
-from app.models.ai import AIConfig, ChatMessage, ChatRole
+from app.models.ai import AIConfig, ChatMessage, ChatRole, UsageStats
 from app.models.constants import (
     OPENAI_API_KEY_SECRET_NAME,
     OPENAI_DEFAULT_MODEL,
+    OPENAI_DEFAULT_SPEND_CAP_USD,
     OPENAI_DEFAULT_TEMPERATURE,
     OPENAI_MODEL_OPTIONS,
     OPENAI_TEMPERATURE_MAX,
     OPENAI_TEMPERATURE_MIN,
 )
 from app.repositories.secrets import resolve_api_key
-from app.services.ai_advisor import stream_mentor_reply
+from app.services.ai_advisor import (
+    accumulate_usage,
+    is_within_spend_cap,
+    stream_mentor_reply,
+)
 
 
 # ===== 起手式問題（給使用者一鍵發問，純 UI display data）=====
@@ -40,9 +45,9 @@ STARTER_QUESTIONS: list[str] = [
 ]
 
 
-def _render_sidebar_controls() -> AIConfig:
-    """設定面板：API Key、模型、temperature。回傳 AIConfig DTO。"""
-    with st.expander("⚙️ **AI 顧問設定**（API Key / 模型 / 創意度）", expanded=False):
+def _render_sidebar_controls() -> tuple[AIConfig, float]:
+    """設定面板：API Key、模型、temperature、spend cap。回傳 (AIConfig, cap_usd)。"""
+    with st.expander("⚙️ **AI 顧問設定**（API Key / 模型 / 創意度 / 預算）", expanded=False):
         st.text_input(
             "🔑 OpenAI API Key",
             type="password",
@@ -71,18 +76,33 @@ def _render_sidebar_controls() -> AIConfig:
                 key="ch9_temperature",
             )
 
-        if st.button("🧹 清空對話歷史", use_container_width=True, key="ch9_clear"):
-            st.session_state.ch9_messages = []
-            st.rerun()
+        cap_usd = st.slider(
+            "💰 本 session 支出上限（USD）",
+            min_value=0.0,
+            max_value=10.0,
+            value=OPENAI_DEFAULT_SPEND_CAP_USD,
+            step=0.10,
+            help="累積成本達上限後會自動鎖住輸入。設為 0 表示無上限。",
+            key="ch9_spend_cap",
+        )
+
+        col_clear, col_reset = st.columns(2)
+        with col_clear:
+            if st.button("🧹 清空對話歷史", use_container_width=True, key="ch9_clear"):
+                st.session_state.ch9_messages = []
+                st.rerun()
+        with col_reset:
+            if st.button("💸 重置成本累計", use_container_width=True, key="ch9_reset_stats"):
+                st.session_state.ch9_usage_stats = UsageStats()
+                st.rerun()
 
     api_key = resolve_api_key(
         st.session_state.get("ch9_api_key_input"),
         OPENAI_API_KEY_SECRET_NAME,
     )
-    return AIConfig(
-        api_key=api_key or "",
-        model=model,
-        temperature=temperature,
+    return (
+        AIConfig(api_key=api_key or "", model=model, temperature=temperature),
+        cap_usd,
     )
 
 
@@ -108,6 +128,26 @@ def _render_history(messages: list[ChatMessage]) -> None:
             st.markdown(msg.content)
 
 
+def _render_usage_stats(stats: UsageStats, cap_usd: float) -> None:
+    """在主畫面頂部顯示累計成本與 token 用量。"""
+    if stats.call_count == 0:
+        return
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("對話次數", f"{stats.call_count}")
+    m2.metric("Input tokens", f"{stats.total_input_tokens:,}")
+    m3.metric("Output tokens", f"{stats.total_output_tokens:,}")
+    cost_color = "inverse" if cap_usd > 0 and stats.total_cost_usd >= cap_usd * 0.8 else "normal"
+    m4.metric(
+        "累計成本（USD）",
+        f"${stats.total_cost_usd:.4f}",
+        delta=(
+            f"剩餘 ${max(cap_usd - stats.total_cost_usd, 0):.4f}"
+            if cap_usd > 0 else "無上限"
+        ),
+        delta_color=cost_color,
+    )
+
+
 def render_chapter_9_ai() -> None:
     """🤖 學長 AI 實戰顧問（Chapter 9）— UI 入口。"""
     st.title("🤖 學長 AI 實戰顧問")
@@ -116,16 +156,19 @@ def render_chapter_9_ai() -> None:
         "建商坑你的合約、房仲的話術、銀行不會講的眉角——**問就對了**。"
     )
 
-    config = _render_sidebar_controls()
+    config, cap_usd = _render_sidebar_controls()
 
     # ----- session_state 初始化 -----
     # Note: Streamlit's session_state attrs can't carry annotations directly
     # (mypy: "Type cannot be declared in assignment to non-self attribute").
-    # Type intent: ch9_messages -> list[ChatMessage], ch9_pending_input -> str | None.
+    # Type intent: ch9_messages -> list[ChatMessage], ch9_pending_input -> str | None,
+    # ch9_usage_stats -> UsageStats.
     if "ch9_messages" not in st.session_state:
         st.session_state.ch9_messages = []
     if "ch9_pending_input" not in st.session_state:
         st.session_state.ch9_pending_input = None
+    if "ch9_usage_stats" not in st.session_state:
+        st.session_state.ch9_usage_stats = UsageStats()
 
     # ----- API Key 缺失警告 -----
     if not config.is_ready:
@@ -133,6 +176,20 @@ def render_chapter_9_ai() -> None:
             "🔑 **請先在上方設定區填入 OpenAI API Key**，或於部署環境設定 "
             "`.streamlit/secrets.toml`：\n\n"
             f"```toml\n{OPENAI_API_KEY_SECRET_NAME} = \"sk-...\"\n```"
+        )
+
+    # ----- 成本累計顯示 -----
+    _render_usage_stats(st.session_state.ch9_usage_stats, cap_usd)
+
+    # ----- Spend cap 檢查 -----
+    cap_exceeded = not is_within_spend_cap(
+        st.session_state.ch9_usage_stats, cap_usd,
+    )
+    if cap_exceeded:
+        st.error(
+            f"💸 **支出上限已達 ${cap_usd:.2f}！** 為避免帳單失控，"
+            "本 session 的對話功能已鎖定。請在側邊欄調高上限，"
+            "或點『重置成本累計』後重新開始。"
         )
 
     st.markdown("---")
@@ -147,7 +204,7 @@ def render_chapter_9_ai() -> None:
     # ----- 取得使用者輸入（chat_input 或 starter chip 觸發）-----
     user_input = st.chat_input(
         "輸入你的問題（例：學長，建商要我付瓦斯管線費怎麼辦？）",
-        disabled=not config.is_ready,
+        disabled=not config.is_ready or cap_exceeded,
         key="ch9_chat_input",
     )
     if st.session_state.ch9_pending_input:
@@ -167,13 +224,19 @@ def render_chapter_9_ai() -> None:
     try:
         with st.chat_message("assistant", avatar="🎓"):
             with st.spinner("學長思考中…"):
-                response_text = st.write_stream(
-                    stream_mentor_reply(config, history)
-                )
+                stream = stream_mentor_reply(config, history)
+                response_text = st.write_stream(stream)
 
         history.append(
             ChatMessage(role=ChatRole.ASSISTANT, content=response_text)
         )
+
+        # ----- 串流結束後更新 token 用量 / 累計成本 -----
+        usage = getattr(stream, "usage", None)
+        if usage is not None:
+            st.session_state.ch9_usage_stats = accumulate_usage(
+                st.session_state.ch9_usage_stats, usage, config.model,
+            )
     except Exception as exc:  # noqa: BLE001 — 對使用者轉譯任何 SDK 例外
         with st.chat_message("assistant", avatar="⚠️"):
             st.error(

@@ -124,3 +124,19 @@ OPENAI_TEMPERATURE_MAX: Final[float] = 1.5
 
 # 環境變數 / Streamlit secrets 的 API Key 鍵名。
 OPENAI_API_KEY_SECRET_NAME: Final[str] = "OPENAI_API_KEY"
+
+# OpenAI 各模型每百萬 tokens 的 USD 報價（2026 年公告價，可隨更新）。
+# 取值方式：input / output tokens 分開計費。
+OPENAI_PRICING_USD_PER_MILLION_TOKENS: Final[dict[str, dict[str, float]]] = {
+    "gpt-4o-mini": {"input": 0.15, "output": 0.60},
+    "gpt-4o": {"input": 2.50, "output": 10.00},
+    "gpt-4-turbo": {"input": 10.00, "output": 30.00},
+}
+
+# 預設每日 / 每 session 支出上限（USD），公開部署時建議在 secrets 覆寫。
+OPENAI_DEFAULT_SPEND_CAP_USD: Final[float] = 1.00
+
+# Repository 層自動重試的最大次數（針對 RateLimitError / APIConnectionError）。
+# 第 N 次重試延遲 = 2 ** N 秒 → 1s, 2s, 4s, 最差合計 ~7 秒。
+OPENAI_MAX_RETRIES: Final[int] = 3
+OPENAI_RETRY_BASE_DELAY_SECONDS: Final[float] = 1.0

@@ -12,9 +12,10 @@
 
 from __future__ import annotations
 
-from typing import Iterator
+from typing import Iterable, Iterator
 
-from app.models.ai import AIConfig, ChatMessage, ChatRole
+from app.models.ai import AIConfig, ChatMessage, ChatRole, TokenUsage, UsageStats
+from app.models.constants import OPENAI_PRICING_USD_PER_MILLION_TOKENS
 from app.repositories.openai_client import stream_chat_completion
 
 
@@ -90,7 +91,7 @@ def build_message_chain(history: list[ChatMessage]) -> list[ChatMessage]:
 
 def stream_mentor_reply(
     config: AIConfig, history: list[ChatMessage],
-) -> Iterator[str]:
+) -> Iterable[str]:
     """以學長 persona 串流回覆使用者最新訊息。
 
     Args:
@@ -98,12 +99,52 @@ def stream_mentor_reply(
         history: 對話歷史 DTO 列表（最後一則應為使用者剛送出的訊息）。
                  system message **不需** 由呼叫端注入，本函式自動 prepend。
 
-    Yields:
-        OpenAI 回傳的 content 字串片段，逐塊到達。
+    Returns:
+        Iterable of content chunks. 若 repository 回傳 ``UsageTrackingStream``，
+        呼叫端可在迭代完成後讀取 ``.usage`` 屬性取得 token 用量。
 
     Raises:
         RuntimeError: openai 套件未安裝（由 repository 翻譯）。
         openai.OpenAIError 及其子類: API 端錯誤（原型 propagate）。
     """
     full_chain = build_message_chain(history)
-    yield from stream_chat_completion(config, full_chain)
+    return stream_chat_completion(config, full_chain)
+
+
+# ============================================================
+# 成本追蹤 — pure functions
+# ============================================================
+def estimate_cost_usd(usage: TokenUsage, model: str) -> float:
+    """根據 OpenAI 公告價計算單次呼叫的 USD 成本。
+
+    Raises:
+        KeyError: 若 model 不在 ``OPENAI_PRICING_USD_PER_MILLION_TOKENS`` 內。
+                  呼叫端應使用 SSOT 中已登錄的模型名稱。
+    """
+    pricing = OPENAI_PRICING_USD_PER_MILLION_TOKENS[model]
+    return (
+        usage.input_tokens / 1_000_000 * pricing["input"]
+        + usage.output_tokens / 1_000_000 * pricing["output"]
+    )
+
+
+def accumulate_usage(
+    stats: UsageStats, usage: TokenUsage, model: str,
+) -> UsageStats:
+    """把單次 token 用量併入累計統計。回傳新的 UsageStats（不可變更新）。"""
+    return UsageStats(
+        total_input_tokens=stats.total_input_tokens + usage.input_tokens,
+        total_output_tokens=stats.total_output_tokens + usage.output_tokens,
+        total_cost_usd=stats.total_cost_usd + estimate_cost_usd(usage, model),
+        call_count=stats.call_count + 1,
+    )
+
+
+def is_within_spend_cap(stats: UsageStats, cap_usd: float) -> bool:
+    """檢查累計成本是否仍在預算上限內。
+
+    cap_usd ≤ 0 視為『無上限』，永遠回傳 True。
+    """
+    if cap_usd <= 0:
+        return True
+    return stats.total_cost_usd < cap_usd

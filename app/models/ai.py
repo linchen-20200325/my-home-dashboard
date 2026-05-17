@@ -49,3 +49,26 @@ class AIConfig:
     @property
     def is_ready(self) -> bool:
         return bool(self.api_key.strip())
+
+
+@dataclass(frozen=True)
+class TokenUsage:
+    """單次 chat completion 的 token 用量（從 OpenAI 串流末尾擷取）。"""
+
+    input_tokens: int
+    output_tokens: int
+    total_tokens: int  # OpenAI API 給的總值（通常 = input + output）
+
+
+@dataclass(frozen=True)
+class UsageStats:
+    """跨多次呼叫的累計用量與成本。所有 service 純函式以本型別操作。"""
+
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
+    total_cost_usd: float = 0.0
+    call_count: int = 0
+
+    @property
+    def total_tokens(self) -> int:
+        return self.total_input_tokens + self.total_output_tokens

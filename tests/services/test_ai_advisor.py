@@ -9,11 +9,14 @@ from __future__ import annotations
 
 import pytest
 
-from app.models.ai import AIConfig, ChatMessage, ChatRole
+from app.models.ai import AIConfig, ChatMessage, ChatRole, TokenUsage, UsageStats
 from app.services import ai_advisor
 from app.services.ai_advisor import (
     MENTOR_SYSTEM_PROMPT,
+    accumulate_usage,
     build_message_chain,
+    estimate_cost_usd,
+    is_within_spend_cap,
     stream_mentor_reply,
 )
 
@@ -72,10 +75,17 @@ class TestMentorSystemPrompt:
 # stream_mentor_reply — 串流委派（mock OpenAI）
 # ============================================================
 class TestStreamMentorReply:
-    def test_is_generator(self) -> None:
-        cfg = AIConfig(api_key="sk-test")
-        gen = stream_mentor_reply(cfg, [])
-        assert hasattr(gen, "__iter__") and hasattr(gen, "__next__")
+    def test_returns_iterable(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """stream_mentor_reply 委派給 repository，回傳物件需可被迭代。"""
+        monkeypatch.setattr(
+            ai_advisor, "stream_chat_completion",
+            lambda c, m: iter(["chunk1", "chunk2"]),
+        )
+        result = stream_mentor_reply(AIConfig(api_key="sk-test"), [])
+        assert hasattr(result, "__iter__")
+        assert list(result) == ["chunk1", "chunk2"]
 
     def test_generator_creation_is_lazy(
         self, monkeypatch: pytest.MonkeyPatch,
@@ -145,3 +155,93 @@ class TestStreamMentorReply:
         monkeypatch.setattr(ai_advisor, "stream_chat_completion", fake_stream)
         with pytest.raises(FakeRateLimitError, match="rate limit"):
             list(stream_mentor_reply(AIConfig(api_key="sk-test"), []))
+
+
+# ============================================================
+# estimate_cost_usd — 成本計算純函式
+# ============================================================
+class TestEstimateCostUsd:
+    def test_gpt_4o_mini_pricing(self) -> None:
+        """gpt-4o-mini: $0.15/M input, $0.60/M output。
+        1000 input + 500 output = 0.00015 + 0.00030 = 0.00045 USD。"""
+        usage = TokenUsage(input_tokens=1000, output_tokens=500, total_tokens=1500)
+        cost = estimate_cost_usd(usage, "gpt-4o-mini")
+        assert cost == pytest.approx(0.00045, abs=1e-9)
+
+    def test_gpt_4o_pricing(self) -> None:
+        """gpt-4o: $2.50/M input, $10.00/M output。
+        1000 input + 500 output = 0.0025 + 0.005 = 0.0075 USD。"""
+        usage = TokenUsage(input_tokens=1000, output_tokens=500, total_tokens=1500)
+        cost = estimate_cost_usd(usage, "gpt-4o")
+        assert cost == pytest.approx(0.0075, abs=1e-9)
+
+    def test_zero_tokens_zero_cost(self) -> None:
+        usage = TokenUsage(input_tokens=0, output_tokens=0, total_tokens=0)
+        assert estimate_cost_usd(usage, "gpt-4o-mini") == 0.0
+
+    def test_unknown_model_raises_keyerror(self) -> None:
+        usage = TokenUsage(input_tokens=100, output_tokens=50, total_tokens=150)
+        with pytest.raises(KeyError):
+            estimate_cost_usd(usage, "fake-model-name")
+
+
+# ============================================================
+# accumulate_usage — 累計統計
+# ============================================================
+class TestAccumulateUsage:
+    def test_first_call_from_zero_stats(self) -> None:
+        stats = UsageStats()  # 全部 0
+        usage = TokenUsage(1000, 500, 1500)
+        new_stats = accumulate_usage(stats, usage, "gpt-4o-mini")
+        assert new_stats.total_input_tokens == 1000
+        assert new_stats.total_output_tokens == 500
+        assert new_stats.call_count == 1
+        assert new_stats.total_cost_usd == pytest.approx(0.00045)
+
+    def test_second_call_accumulates(self) -> None:
+        stats = UsageStats(
+            total_input_tokens=500, total_output_tokens=200,
+            total_cost_usd=0.001, call_count=1,
+        )
+        usage = TokenUsage(1000, 500, 1500)
+        new_stats = accumulate_usage(stats, usage, "gpt-4o-mini")
+        assert new_stats.total_input_tokens == 1500
+        assert new_stats.total_output_tokens == 700
+        assert new_stats.call_count == 2
+        # 0.001 + 0.00045 = 0.00145
+        assert new_stats.total_cost_usd == pytest.approx(0.00145)
+
+    def test_returns_new_instance_not_mutates(self) -> None:
+        """frozen dataclass: 不可變更新，回傳新實例。"""
+        stats = UsageStats(total_input_tokens=100)
+        new_stats = accumulate_usage(stats, TokenUsage(1, 1, 2), "gpt-4o-mini")
+        assert stats.total_input_tokens == 100  # 原 stats 不變
+        assert new_stats is not stats
+
+    def test_total_tokens_property(self) -> None:
+        stats = UsageStats(total_input_tokens=300, total_output_tokens=200)
+        assert stats.total_tokens == 500
+
+
+# ============================================================
+# is_within_spend_cap — 預算上限檢查
+# ============================================================
+class TestIsWithinSpendCap:
+    def test_below_cap(self) -> None:
+        stats = UsageStats(total_cost_usd=0.50)
+        assert is_within_spend_cap(stats, 1.0) is True
+
+    def test_at_cap_exactly(self) -> None:
+        """剛好達到 cap → 視為超過（嚴格 `<`）。"""
+        stats = UsageStats(total_cost_usd=1.0)
+        assert is_within_spend_cap(stats, 1.0) is False
+
+    def test_over_cap(self) -> None:
+        stats = UsageStats(total_cost_usd=2.5)
+        assert is_within_spend_cap(stats, 1.0) is False
+
+    @pytest.mark.parametrize("cap", [0.0, -1.0, -100.0])
+    def test_zero_or_negative_cap_means_unlimited(self, cap: float) -> None:
+        """cap ≤ 0 視為『無上限』，永遠 within。"""
+        stats = UsageStats(total_cost_usd=999.0)
+        assert is_within_spend_cap(stats, cap) is True
