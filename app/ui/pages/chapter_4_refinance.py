@@ -11,6 +11,7 @@ from app.services.leverage import (
     calculate_building_gap,
     diagnose_wash_progress,
 )
+from app.ui.components.metric_grid import render_metric_row
 
 
 WASH_STAGE_LABELS: list[str] = [
@@ -54,22 +55,26 @@ def _render_gap_tab() -> None:
 
     st.markdown("---")
     st.markdown("##### 📊 銀行估價拆解")
-    m1, m2, m3 = st.columns(3)
-    m1.metric(
-        "同棟最高總價", f"{result.total_max_price_wan:,.1f} 萬",
-        help=f"{max_unit_price_wan:.1f} 萬／坪 × {ping_size:.1f} 坪",
-    )
-    m2.metric(
-        "你的目標總價", f"{result.total_target_price_wan:,.1f} 萬",
-        help=f"{target_unit_price_wan:.1f} 萬／坪 × {ping_size:.1f} 坪",
-    )
-    m3.metric(
-        "單坪價差", f"{result.unit_gap_wan:+.1f} 萬／坪",
-        delta=(
-            f"{(result.unit_gap_wan / max_unit_price_wan * 100):.1f}%"
-            if max_unit_price_wan > 0 else None
-        ),
-    )
+    render_metric_row([
+        {
+            "label": "同棟最高總價",
+            "value": f"{result.total_max_price_wan:,.1f} 萬",
+            "help": f"{max_unit_price_wan:.1f} 萬／坪 × {ping_size:.1f} 坪",
+        },
+        {
+            "label": "你的目標總價",
+            "value": f"{result.total_target_price_wan:,.1f} 萬",
+            "help": f"{target_unit_price_wan:.1f} 萬／坪 × {ping_size:.1f} 坪",
+        },
+        {
+            "label": "單坪價差",
+            "value": f"{result.unit_gap_wan:+.1f} 萬／坪",
+            "delta": (
+                f"{(result.unit_gap_wan / max_unit_price_wan * 100):.1f}%"
+                if max_unit_price_wan > 0 else None
+            ),
+        },
+    ])
 
     st.metric(
         "💰 預估未來可超額增貸空間", f"{result.potential_refinance_gap_wan:,.1f} 萬",

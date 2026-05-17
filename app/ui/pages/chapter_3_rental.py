@@ -20,6 +20,7 @@ from app.services.pricing import (
     vacancy_stepdown_prices,
 )
 from app.services.tenant_radar import TenantSeverity, diagnose_tenant
+from app.ui.components.metric_grid import render_metric_row
 
 
 # ===== UI labels（保留原文）=====
@@ -66,10 +67,12 @@ def _render_pricing_tab() -> None:
 
     st.markdown("---")
     st.markdown("##### 📊 學長定價公式拆解")
-    m1, m2, m3 = st.columns(3)
-    m1.metric("基礎租金", f"{result.base_rent_ntd:,.0f} 元", help="平均單坪租金 × 坪數")
-    m2.metric("樓層係數", f"× {result.floor_coef}", help=floor_choice)
-    m3.metric("屋齡係數", f"× {result.age_coef}", help=age_choice)
+    render_metric_row([
+        {"label": "基礎租金", "value": f"{result.base_rent_ntd:,.0f} 元",
+         "help": "平均單坪租金 × 坪數"},
+        {"label": "樓層係數", "value": f"× {result.floor_coef}", "help": floor_choice},
+        {"label": "屋齡係數", "value": f"× {result.age_coef}", "help": age_choice},
+    ])
 
     st.metric(
         "🎯 建議極限租金（上架價）", f"{result.suggested_rent_ntd:,.0f} 元 / 月",
@@ -122,10 +125,11 @@ def _render_radar_tab() -> None:
 
     st.markdown("---")
     st.markdown("##### 📊 防線評分結果")
-    s1, s2, s3 = st.columns(3)
-    s1.metric("通過項數", f"{score.passed_count} / 7")
-    s2.metric("總分", f"{score.total_score} / {TENANT_CHECK_TOTAL_MAX} 分")
-    s3.metric("魔王題", "✅ 通過" if boss_ok else "❌ 失守")
+    render_metric_row([
+        {"label": "通過項數", "value": f"{score.passed_count} / 7"},
+        {"label": "總分", "value": f"{score.total_score} / {TENANT_CHECK_TOTAL_MAX} 分"},
+        {"label": "魔王題", "value": "✅ 通過" if boss_ok else "❌ 失守"},
+    ])
 
     if verdict.severity == TenantSeverity.DANGEROUS:
         failure_reasons: list[str] = []

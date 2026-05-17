@@ -14,6 +14,8 @@ UI 層：純 Streamlit 對話介面；
 
 from __future__ import annotations
 
+from typing import Literal
+
 import streamlit as st
 
 from app.models.ai import AIConfig, ChatMessage, ChatRole, UsageStats
@@ -136,7 +138,10 @@ def _render_usage_stats(stats: UsageStats, cap_usd: float) -> None:
     m1.metric("對話次數", f"{stats.call_count}")
     m2.metric("Input tokens", f"{stats.total_input_tokens:,}")
     m3.metric("Output tokens", f"{stats.total_output_tokens:,}")
-    cost_color = "inverse" if cap_usd > 0 and stats.total_cost_usd >= cap_usd * 0.8 else "normal"
+    cost_color: Literal["normal", "inverse"] = (
+        "inverse" if cap_usd > 0 and stats.total_cost_usd >= cap_usd * 0.8
+        else "normal"
+    )
     m4.metric(
         "累計成本（USD）",
         f"${stats.total_cost_usd:.4f}",
@@ -227,8 +232,14 @@ def render_chapter_9_ai() -> None:
                 stream = stream_mentor_reply(config, history)
                 response_text = st.write_stream(stream)
 
+        # st.write_stream 的回傳型別是 list[Any] | str（chunk 級可能含非字串），
+        # ChatMessage 只收純字串，這裡把 list 接回 str 避免後續渲染時錯亂。
+        response_str = (
+            response_text if isinstance(response_text, str)
+            else "".join(str(piece) for piece in response_text)
+        )
         history.append(
-            ChatMessage(role=ChatRole.ASSISTANT, content=response_text)
+            ChatMessage(role=ChatRole.ASSISTANT, content=response_str)
         )
 
         # ----- 串流結束後更新 token 用量 / 累計成本 -----

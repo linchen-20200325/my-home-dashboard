@@ -13,6 +13,7 @@ from app.services.liquidity import (
     calculate_exit_age,
     diagnose_residency_evidence,
 )
+from app.ui.components.metric_grid import render_metric_row
 
 
 RESIDENCY_CHECKS: list[tuple[str, str]] = [
@@ -47,17 +48,20 @@ def _render_exit_age_calculator() -> None:
 
     st.markdown("---")
     st.markdown("##### 📊 脫手時點推演")
-    m1, m2, m3 = st.columns(3)
-    m1.metric("脫手時屋齡", f"{result.exit_age} 年")
-    m2.metric(
-        "下一手可貸年期", f"{result.max_bank_loan_years} 年",
-        help="銀行貸款年期上限：min(50 − 屋齡, 30)。",
-    )
-    m3.metric(
-        "紅線距離", f"{result.distance_to_red_line:+d} 年",
-        delta_color="inverse",
-        help=f"以屋齡 {EXIT_AGE_RED_LINE_YEARS} 年為轉手紅線。",
-    )
+    render_metric_row([
+        {"label": "脫手時屋齡", "value": f"{result.exit_age} 年"},
+        {
+            "label": "下一手可貸年期",
+            "value": f"{result.max_bank_loan_years} 年",
+            "help": "銀行貸款年期上限：min(50 − 屋齡, 30)。",
+        },
+        {
+            "label": "紅線距離",
+            "value": f"{result.distance_to_red_line:+d} 年",
+            "delta_color": "inverse",
+            "help": f"以屋齡 {EXIT_AGE_RED_LINE_YEARS} 年為轉手紅線。",
+        },
+    ])
 
     st.markdown("---")
     if result.is_over_red_line:

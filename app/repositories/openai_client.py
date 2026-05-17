@@ -109,7 +109,7 @@ def stream_chat_completion(
     last_exc: Exception | None = None
     for attempt in range(OPENAI_MAX_RETRIES + 1):
         try:
-            raw_stream = client.chat.completions.create(**payload)  # type: ignore[arg-type]
+            raw_stream = client.chat.completions.create(**payload)  # type: ignore[arg-type, call-overload]
             return UsageTrackingStream(raw_stream)
         except (RateLimitError, APIConnectionError) as exc:
             last_exc = exc

@@ -23,6 +23,7 @@ from app.models.constants import (
 )
 from app.services.cashflow import LOW_BUFFER_THRESHOLD_NTD, diagnose_cashflow
 from app.services.leverage import simulate_m2_decade
+from app.ui.components.metric_grid import render_metric_row
 
 # Cross-chapter navigation helpers 透過 function-level import 引入，
 # 因為 ``app.ui.router`` 反向 import 本 UI 模組，top-level import 會循環。
@@ -72,36 +73,34 @@ def _render_cashflow_tab() -> None:
     # ---------- 渲染 metrics ----------
     st.markdown("---")
     st.markdown("##### 📊 學長現金流四維診斷")
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("總收入", f"{total_income:,.0f} 元")
-    m2.metric(
-        "淨現金流",
-        f"{snapshot.net_cashflow_ntd:,.0f} 元",
-        delta=(
-            f"{(snapshot.net_cashflow_ntd / total_income * 100):.0f}% of 收入"
-            if total_income > 0
-            else None
-        ),
-        delta_color="normal" if snapshot.net_cashflow_ntd >= 0 else "inverse",
-    )
-    m3.metric(
-        "預估房貸基準",
-        f"{ESTIMATED_FUTURE_MORTGAGE_NTD:,} 元",
-        help="學長以 4 萬 / 月作為入門收租房的房貸假設。",
-    )
-
     dti_is_inf = math.isinf(snapshot.dti)
-    m4.metric(
-        "DTI 總負債比",
-        f"{snapshot.dti * 100:.1f} %" if not dti_is_inf else "—",
-        delta=(
-            f"{(snapshot.dti - DTI_DANGER_RATIO) * 100:+.1f} pp vs 70%"
-            if not dti_is_inf
-            else None
-        ),
-        delta_color="inverse",
-        help="(壞債 + 預估房貸) / 總收入。銀行死線為 70%。",
-    )
+    render_metric_row([
+        {"label": "總收入", "value": f"{total_income:,.0f} 元"},
+        {
+            "label": "淨現金流",
+            "value": f"{snapshot.net_cashflow_ntd:,.0f} 元",
+            "delta": (
+                f"{(snapshot.net_cashflow_ntd / total_income * 100):.0f}% of 收入"
+                if total_income > 0 else None
+            ),
+            "delta_color": "normal" if snapshot.net_cashflow_ntd >= 0 else "inverse",
+        },
+        {
+            "label": "預估房貸基準",
+            "value": f"{ESTIMATED_FUTURE_MORTGAGE_NTD:,} 元",
+            "help": "學長以 4 萬 / 月作為入門收租房的房貸假設。",
+        },
+        {
+            "label": "DTI 總負債比",
+            "value": f"{snapshot.dti * 100:.1f} %" if not dti_is_inf else "—",
+            "delta": (
+                f"{(snapshot.dti - DTI_DANGER_RATIO) * 100:+.1f} pp vs 70%"
+                if not dti_is_inf else None
+            ),
+            "delta_color": "inverse",
+            "help": "(壞債 + 預估房貸) / 總收入。銀行死線為 70%。",
+        },
+    ])
 
     st.markdown("---")
 

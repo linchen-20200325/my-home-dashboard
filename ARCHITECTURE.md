@@ -173,30 +173,30 @@ my-house-2026/
 
 ---
 
-## 6. Phase 3 進度（持續中）
+## 6. Phase 3 進度（完成）
 
 詳見 [`STATE.md`](./STATE.md) 末段「Phase 3 候選 Backlog」。
 
-### 已完成（14 / 22）
+### 已執行（19 / 22）
 
 | 類別 | 完成項目 |
 |---|---|
-| **測試擴充** | #34 leverage + #35-#42 全部剩餘 services / repositories |
-| **CI / 部署** | #43 GitHub Actions workflow / #44 README.md / #45 secrets.toml.example |
-| **品質工具** | #47 mypy 靜態型別檢核（本 PR）/ #55 ARCHITECTURE.md 更新（本 PR）|
+| **測試擴充** | #34 leverage + #35-#42 全部剩餘 services / repositories（248 tests）|
+| **CI / 部署** | #43 GitHub Actions workflow / #44 README.md / #45 secrets.toml.example / #46 Dockerfile + `.dockerignore` |
+| **品質工具** | #47 mypy 靜態型別檢核 / #48 Module-level 常數整合 SSOT / #55 ARCHITECTURE.md 更新 |
+| **生產化** | #51 AI token cost tracker / spend cap / #52 AI retry / rate-limit logic |
+| **體驗** | #53 Cross-chapter 跳轉（Ch.1 HEALTHY / Ch.10 GREEN_LIGHT → 下一步）|
+| **內聚** | #49 Components 部分導入（Ch.1 / 3 / 4 / 7 / 10 的 `render_metric_row` retrofit）|
 
-### 剩餘候選（8 項）
+### 評估後封存（3 項，附原因）
 
-| Priority | Item |
-|---|---|
-| 🟡 中 | #46 Dockerfile + `.dockerignore` |
-| 🟠 中高（公開部署前）| #51 AI token cost tracker / spend cap |
-| 🟠 中高 | #52 AI retry / rate-limit logic |
-| 🟢 低 | #48 Module-level 常數整合到 constants.py SSOT |
-| 🟢 低 | #53 Cross-chapter 跳轉（Ch.10 GREEN_LIGHT → Ch.4）|
-| ⚪ YAGNI | #49 Components 實際導入現有 UI |
-| ⚪ YAGNI | #50 Chapter 11 退回純文件 |
-| ⚪ YAGNI | #54 `_legacy/app.py` UI 復活評估 |
+| Item | 結論 | 原因 |
+|---|---|---|
+| #49 components 全域 retrofit | **部分執行，其餘封存** | 5 個 metric row 已 retrofit；另 ~15 處 alert 的 message 為長 f-string，使用 `render_verdict` 反而會把 dict 撐到比 if/elif 更長，違反「helper 應簡化、不應遮蔽」原則。 |
+| #50 Chapter 11 退回純文件 | **評估後維持現狀** | Ch.11 的 checkbox 提供『五神器打包進度 / 四大檢測完成度』即時回饋（progress bar + 條件警告），不是裝飾。改回純 markdown 會喪失現場使用價值。 |
+| #54 `_legacy/app.py` UI 復活 | **評估後維持封存** | legacy 唯一獨特功能是 PMT 試算 / 攤還表，已在 #11 抽到 `services/mortgage.py`；其餘 12 個 tab 與重構後 14 章節重複度 > 90%。無新功能可救回。|
+
+> **Phase 3 至此宣告結束** — 重要工作 19 項全部完成，3 項 YAGNI 經評估封存。所有 22 個 backlog item 皆有明確終局。
 
 ---
 

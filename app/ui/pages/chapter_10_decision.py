@@ -13,6 +13,7 @@ from app.services.decision_engine import (
     TerminalDecision,
     diagnose_property_decision,
 )
+from app.ui.components.metric_grid import render_metric_row
 
 
 FATAL_RED_FLAGS: list[tuple[str, str]] = [
@@ -108,17 +109,19 @@ def _render_radar_panel(
     verdict = diagnose_property_decision(spec, price, red_flags)
 
     st.markdown("##### 💵 財務空間診斷")
-    m1, m2, m3 = st.columns(3)
-    m1.metric("銀行鑑價", f"{price.bank_appraisal_wan:,.0f} 萬")
-    m2.metric("你的出價", f"{price.your_offer_wan:,.0f} 萬")
-    m3.metric(
-        "出價 − 鑑價", f"{verdict.price_gap_wan:+,.0f} 萬",
-        delta=(
-            f"{(verdict.price_gap_wan / price.bank_appraisal_wan * 100):+.1f}%"
-            if price.bank_appraisal_wan > 0 else None
-        ),
-        delta_color="inverse",
-    )
+    render_metric_row([
+        {"label": "銀行鑑價", "value": f"{price.bank_appraisal_wan:,.0f} 萬"},
+        {"label": "你的出價", "value": f"{price.your_offer_wan:,.0f} 萬"},
+        {
+            "label": "出價 − 鑑價",
+            "value": f"{verdict.price_gap_wan:+,.0f} 萬",
+            "delta": (
+                f"{(verdict.price_gap_wan / price.bank_appraisal_wan * 100):+.1f}%"
+                if price.bank_appraisal_wan > 0 else None
+            ),
+            "delta_color": "inverse",
+        },
+    ])
 
     if verdict.price_gap_wan > 0:
         st.error(
