@@ -24,6 +24,9 @@ from app.models.constants import (
 from app.services.cashflow import LOW_BUFFER_THRESHOLD_NTD, diagnose_cashflow
 from app.services.leverage import simulate_m2_decade
 
+# Cross-chapter navigation helpers 透過 function-level import 引入，
+# 因為 ``app.ui.router`` 反向 import 本 UI 模組，top-level import 會循環。
+
 
 def _render_cashflow_tab() -> None:
     """分頁一：階級現金流診斷儀。"""
@@ -148,6 +151,17 @@ def _render_cashflow_tab() -> None:
             f"DTI {snapshot.dti * 100:.1f}%，"
             "可以開始認真看物件了。下一步：去 Ch.3 算租金、Ch.4 拗增貸。"
         )
+        # ----- Cross-chapter 快速跳轉（避免使用者翻 sidebar）-----
+        # 延後 import 避免 chapter / router / navigation 形成循環依賴。
+        from app.ui.components.navigation import chapter_jump_button as _jump
+        from app.ui.router import CHAPTER_KEY_CH3, CHAPTER_KEY_CH4
+        col_nav_a, col_nav_b = st.columns(2)
+        with col_nav_a:
+            _jump("💰 去 Ch.3 算租金 →", CHAPTER_KEY_CH3,
+                  button_key="ch1_jump_ch3", use_container_width=True)
+        with col_nav_b:
+            _jump("🏦 去 Ch.4 拗增貸 →", CHAPTER_KEY_CH4,
+                  button_key="ch1_jump_ch4", use_container_width=True)
 
 
 def _render_m2_tab() -> None:

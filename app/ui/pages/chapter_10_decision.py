@@ -200,6 +200,23 @@ def _render_radar_panel(
             "4. 同時去 Ch.4 試算交屋後**超額增貸空間**\n\n"
             "**這種物件 3 個月才會出現一次——別猶豫，動手吧！**"
         )
+        # ----- Cross-chapter 跳轉：綠燈進攻區的最佳下一步 -----
+        from app.ui.components.navigation import chapter_jump_button as _jump
+        from app.ui.router import (
+            CHAPTER_KEY_CH4,
+            CHAPTER_KEY_CH11,
+            CHAPTER_KEY_STRATEGY_NEGOTIATION,
+        )
+        col_a, col_b, col_c = st.columns(3)
+        with col_a:
+            _jump("⚔️ 驗屋 SOP →", CHAPTER_KEY_CH11,
+                  button_key="ch10_jump_combat", use_container_width=True)
+        with col_b:
+            _jump("💼 議價戰術 →", CHAPTER_KEY_STRATEGY_NEGOTIATION,
+                  button_key="ch10_jump_negotiation", use_container_width=True)
+        with col_c:
+            _jump("🏦 算增貸空間 →", CHAPTER_KEY_CH4,
+                  button_key="ch10_jump_refinance", use_container_width=True)
     else:  # OBSERVATION
         st.info(
             "🟡 **觀察區**：沒有一刀斃命的問題，但**存在扣分項**。\n\n"
