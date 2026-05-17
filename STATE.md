@@ -115,7 +115,7 @@
 - [x] **#20** `app/ui/pages/chapter_6_tax.py` _(commit: batch with #16/#19/#21/#22)_
 - [x] **#21** `app/ui/pages/chapter_7_exit.py` _(commit: batch with #16/#19/#20/#22)_
 - [x] **#22** `app/ui/pages/chapter_8_advanced.py` _(commit: batch with #16/#19/#20/#21)_
-- [ ] **#23** `app/ui/pages/chapter_9_ai.py`
+- [x] **#23** `app/ui/pages/chapter_9_ai.py` _(commit: Batch 3 PR)_
 - [x] **#24** `app/ui/pages/chapter_10_decision.py` _(commit: Batch 2 PR)_
 - [x] **#25** `app/ui/pages/chapter_11_combat.py` _(commit: Batch 2 PR)_
 - [x] **#26** `app/ui/pages/strategy_macro.py` _(commit: Batch 2 PR)_
