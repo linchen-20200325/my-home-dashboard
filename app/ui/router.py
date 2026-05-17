@@ -17,7 +17,7 @@ from typing import Callable
 
 import streamlit as st
 
-from app.ui.components.navigation import NAV_STATE_KEY
+from app.ui.components.navigation import NAV_STATE_KEY, apply_pending_nav
 from app.ui.pages.chapter_1_cashflow import render_chapter_1
 from app.ui.pages.chapter_2_presale import render_chapter_2
 from app.ui.pages.chapter_3_rental import render_chapter_3
@@ -90,6 +90,11 @@ def run() -> None:
     # 初始預設值（只有 session 首次進入時生效）
     if NAV_STATE_KEY not in st.session_state:
         st.session_state[NAV_STATE_KEY] = CHAPTER_KEY_CH1
+
+    # 消化跨頁跳轉：把 NAV_PENDING_KEY 翻譯成 NAV_STATE_KEY。
+    # ⚠️ 必須在 sidebar 的 st.radio 建立**之前**呼叫，
+    # 否則寫 widget-bound key 會拋 StreamlitAPIException。
+    apply_pending_nav(CHAPTERS.keys())
 
     with st.sidebar:
         st.title(SIDEBAR_TITLE)

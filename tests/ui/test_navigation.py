@@ -15,7 +15,12 @@ import pytest
 # CI 有 streamlit（requirements.txt 拉進來），會正常執行。
 pytest.importorskip("streamlit")
 
-from app.ui.components.navigation import NAV_STATE_KEY, chapter_jump_button  # noqa: E402
+from app.ui.components.navigation import (  # noqa: E402
+    NAV_PENDING_KEY,
+    NAV_STATE_KEY,
+    apply_pending_nav,
+    chapter_jump_button,
+)
 
 
 pytestmark = [pytest.mark.repositories]  # 借用一個有效 marker — 純 UI 元件
@@ -28,12 +33,19 @@ class TestNavStateKey:
         assert NAV_STATE_KEY == "__current_chapter"
         assert isinstance(NAV_STATE_KEY, str)
 
+    def test_pending_key_is_separate_from_state_key(self) -> None:
+        """PENDING / STATE 必須是兩個不同的字串——同名會回到 widget-bound
+        key 衝突的 bug。"""
+        assert NAV_PENDING_KEY != NAV_STATE_KEY
+        assert NAV_PENDING_KEY == "__pending_chapter"
+
 
 class TestChapterJumpButton:
-    def test_button_writes_state_and_reruns_on_click(
+    def test_button_writes_pending_key_not_state_key(
         self, monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """按下按鈕 → session_state[NAV_STATE_KEY] = target，再呼叫 st.rerun()。"""
+        """按下按鈕 → 寫 NAV_PENDING_KEY（**非** NAV_STATE_KEY，後者被 widget
+        綁定，同 run 寫入會 StreamlitAPIException），再呼叫 st.rerun()。"""
         from app.ui.components import navigation as nav_mod
 
         # 用 dict 模擬 session_state
@@ -57,10 +69,13 @@ class TestChapterJumpButton:
 
         monkeypatch.setattr(nav_mod, "st", _FakeSt)
 
+        target = "🏦 Ch.4 槓桿魔法:科目四金流過水 SOP"
         with pytest.raises(RuntimeError, match="rerun_called"):
-            chapter_jump_button("→ Ch.4", "🏦 Ch.4 槓桿魔法:科目四金流過水 SOP")
+            chapter_jump_button("→ Ch.4", target)
 
-        assert fake_state[NAV_STATE_KEY] == "🏦 Ch.4 槓桿魔法:科目四金流過水 SOP"
+        # 關鍵：寫 PENDING、不碰 STATE
+        assert fake_state[NAV_PENDING_KEY] == target
+        assert NAV_STATE_KEY not in fake_state
         assert rerun_calls == [True]
 
     def test_returns_false_when_button_not_clicked(
@@ -106,3 +121,60 @@ class TestChapterJumpButton:
 
         chapter_jump_button("→ Ch.X", "target_label")
         assert captured["key"] == "jump_target_label"
+
+
+class TestApplyPendingNav:
+    """router.run() 在 radio 建立前消化 pending key → NAV_STATE_KEY。"""
+
+    def test_pending_with_valid_target_promotes_to_state(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from app.ui.components import navigation as nav_mod
+
+        fake_state: dict[str, str] = {NAV_PENDING_KEY: "ch_target"}
+
+        class _FakeSt:
+            session_state = fake_state
+
+        monkeypatch.setattr(nav_mod, "st", _FakeSt)
+
+        apply_pending_nav(["ch_target", "ch_other"])
+
+        assert fake_state.get(NAV_STATE_KEY) == "ch_target"
+        assert NAV_PENDING_KEY not in fake_state  # pending 已 pop
+
+    def test_pending_with_invalid_target_silently_dropped(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """錯字 / 不在 CHAPTERS 的 key 應該被靜默丟棄，不汙染 widget。"""
+        from app.ui.components import navigation as nav_mod
+
+        fake_state: dict[str, str] = {NAV_PENDING_KEY: "bogus_chapter"}
+
+        class _FakeSt:
+            session_state = fake_state
+
+        monkeypatch.setattr(nav_mod, "st", _FakeSt)
+
+        apply_pending_nav(["ch_a", "ch_b"])
+
+        # NAV_STATE_KEY 不該被寫入；pending pop 掉
+        assert NAV_STATE_KEY not in fake_state
+        assert NAV_PENDING_KEY not in fake_state
+
+    def test_no_pending_is_noop(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from app.ui.components import navigation as nav_mod
+
+        fake_state: dict[str, str] = {NAV_STATE_KEY: "existing"}
+
+        class _FakeSt:
+            session_state = fake_state
+
+        monkeypatch.setattr(nav_mod, "st", _FakeSt)
+
+        apply_pending_nav(["existing", "other"])
+
+        # NAV_STATE_KEY 維持原值，沒被改
+        assert fake_state[NAV_STATE_KEY] == "existing"
