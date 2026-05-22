@@ -16,7 +16,6 @@ import streamlit as st
 from app.models.cashflow import CashflowInput, CashflowSeverity
 from app.models.constants import (
     DTI_DANGER_RATIO,
-    ESTIMATED_FUTURE_MORTGAGE_NTD,
     M2_BANK_DEPOSIT_ANNUAL_RATE,
     M2_INITIAL_CAPITAL_NTD,
     M2_SIMULATION_YEARS,
@@ -50,24 +49,65 @@ def _render_cashflow_tab() -> None:
             min_value=0,
             value=30_000,
             step=1_000,
-            help="吃、住、交通、保險等剛性支出，**不含房貸**。",
+            help="吃、住、交通、保險等剛性支出，**不含任何貸款**。",
             key="ch1_living_cost",
         )
     with col_c:
-        bad_debt = st.number_input(
-            "每月壞債支出（元）",
+        existing_mortgage = st.number_input(
+            "現有房貸月付金（元）",
             min_value=0,
             value=0,
             step=1_000,
-            help="車貸、信貸、卡債最低應繳——**會消耗現金流的負債**。",
-            key="ch1_bad_debt",
+            help="若已有自住或投資房，每月應繳房貸；無則填 0。",
+            key="ch1_existing_mortgage",
+        )
+
+    st.caption("👇 中產毒藥負債（會消耗現金流的『偽資產』負債）：")
+    col_d, col_e, col_f, col_g = st.columns(4)
+    with col_d:
+        car_loan = st.number_input(
+            "車貸月付（元）",
+            min_value=0,
+            value=0,
+            step=500,
+            key="ch1_car_loan",
+        )
+    with col_e:
+        personal_loan = st.number_input(
+            "信貸月付（元）",
+            min_value=0,
+            value=0,
+            step=500,
+            key="ch1_personal_loan",
+        )
+    with col_f:
+        credit_card_min = st.number_input(
+            "卡債最低應繳（元）",
+            min_value=0,
+            value=0,
+            step=500,
+            help="信用卡循環利率 15%，務必先還清。",
+            key="ch1_credit_card_min",
+        )
+    with col_g:
+        other_debt = st.number_input(
+            "其他貸款月付（元）",
+            min_value=0,
+            value=0,
+            step=500,
+            help="學貸、就學貸款、其他分期等。",
+            key="ch1_other_debt",
         )
 
     # ---------- 委派給 service ----------
     snapshot = diagnose_cashflow(CashflowInput(
         total_income_ntd=int(total_income),
         living_cost_ntd=int(living_cost),
-        bad_debt_ntd=int(bad_debt),
+        existing_mortgage_ntd=int(existing_mortgage),
+        car_loan_ntd=int(car_loan),
+        personal_loan_ntd=int(personal_loan),
+        credit_card_min_ntd=int(credit_card_min),
+        other_debt_ntd=int(other_debt),
     ))
 
     # ---------- 渲染 metrics ----------
@@ -86,9 +126,9 @@ def _render_cashflow_tab() -> None:
             "delta_color": "normal" if snapshot.net_cashflow_ntd >= 0 else "inverse",
         },
         {
-            "label": "預估房貸基準",
-            "value": f"{ESTIMATED_FUTURE_MORTGAGE_NTD:,} 元",
-            "help": "學長以 4 萬 / 月作為入門收租房的房貸假設。",
+            "label": "每月總負債",
+            "value": f"{snapshot.total_debt_ntd:,.0f} 元",
+            "help": "現有房貸 + 車貸 + 信貸 + 卡債最低 + 其他。",
         },
         {
             "label": "DTI 總負債比",
@@ -98,7 +138,7 @@ def _render_cashflow_tab() -> None:
                 if not dti_is_inf else None
             ),
             "delta_color": "inverse",
-            "help": "(壞債 + 預估房貸) / 總收入。銀行死線為 70%。",
+            "help": "每月總負債 / 總收入。銀行死線為 70%。",
         },
     ])
 

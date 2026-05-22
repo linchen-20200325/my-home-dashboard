@@ -16,13 +16,15 @@ from app.models.cashflow import (
 )
 from app.models.constants import (
     DTI_DANGER_RATIO,
-    ESTIMATED_FUTURE_MORTGAGE_NTD,
     LOW_BUFFER_THRESHOLD_NTD,
 )
 
 
 def diagnose_cashflow(payload: CashflowInput) -> CashflowSnapshot:
     """根據月度收支算出淨現金流、DTI、健康度分級。
+
+    DTI 採銀行標準公式：
+        DTI = (現有房貸 + 車貸 + 信貸 + 卡債最低應繳 + 其他) / 總收入
 
     判定優先序（severity 由壞至好）：
         1. total_income ≤ 0 → DTI = inf → DTI_LOCKED
@@ -31,35 +33,31 @@ def diagnose_cashflow(payload: CashflowInput) -> CashflowSnapshot:
         4. net_cashflow < LOW_BUFFER_THRESHOLD_NTD → LOW_BUFFER
         5. 其他 → HEALTHY
 
-    壞債（車貸／信貸／卡債）獨立透過 ``has_bad_debt`` 旗標回報。
-    UI 可同時顯示『毒藥警告』與『主健康度診斷』，兩者正交。
+    毒藥旗標（has_bad_debt）：透過 ``payload.poison_debt_ntd > 0`` 判定，
+    扣除「現有房貸」後若仍有車貸／信貸／卡債／其他即觸發，與 severity 正交。
 
     Args:
         payload: 月度收支輸入 DTO。
 
     Returns:
-        CashflowSnapshot：含淨現金流、DTI、毒藥旗標、嚴重度。
+        CashflowSnapshot：含淨現金流、DTI、毒藥旗標、嚴重度、每月總負債。
     """
-    net = (
-        payload.total_income_ntd
-        - payload.living_cost_ntd
-        - payload.bad_debt_ntd
-    )
+    total_debt = payload.total_debt_ntd
+    net = payload.total_income_ntd - payload.living_cost_ntd - total_debt
 
     if payload.total_income_ntd <= 0:
         dti = float("inf")
     else:
-        dti = (
-            payload.bad_debt_ntd + ESTIMATED_FUTURE_MORTGAGE_NTD
-        ) / payload.total_income_ntd
+        dti = total_debt / payload.total_income_ntd
 
     severity = _classify_severity(net, dti)
 
     return CashflowSnapshot(
         net_cashflow_ntd=net,
         dti=dti,
-        has_bad_debt=payload.bad_debt_ntd > 0,
+        has_bad_debt=payload.poison_debt_ntd > 0,
         severity=severity,
+        total_debt_ntd=total_debt,
     )
 
 

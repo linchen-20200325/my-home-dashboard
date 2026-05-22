@@ -21,11 +21,43 @@ class CashflowSeverity(str, Enum):
 
 @dataclass(frozen=True)
 class CashflowInput:
-    """月度收支輸入（單位：元 NTD）。"""
+    """月度收支輸入（單位：元 NTD）。
+
+    DTI 標準公式（銀行核貸）：
+        DTI = (現有房貸 + 車貸 + 信貸 + 卡債最低應繳 + 其他) / 總收入
+
+    毒藥負債（中產毒藥警告）：上述五項扣掉現有房貸後的總和
+    —— 房貸對應「房子」這個資產，不計入毒藥；其餘四項皆為消耗型負債。
+    """
 
     total_income_ntd: int
     living_cost_ntd: int
-    bad_debt_ntd: int = 0
+    existing_mortgage_ntd: int = 0
+    car_loan_ntd: int = 0
+    personal_loan_ntd: int = 0
+    credit_card_min_ntd: int = 0
+    other_debt_ntd: int = 0
+
+    @property
+    def total_debt_ntd(self) -> int:
+        """每月負債總和（DTI 分子）。"""
+        return (
+            self.existing_mortgage_ntd
+            + self.car_loan_ntd
+            + self.personal_loan_ntd
+            + self.credit_card_min_ntd
+            + self.other_debt_ntd
+        )
+
+    @property
+    def poison_debt_ntd(self) -> int:
+        """中產毒藥負債（扣除現有房貸後的消耗型負債）。"""
+        return (
+            self.car_loan_ntd
+            + self.personal_loan_ntd
+            + self.credit_card_min_ntd
+            + self.other_debt_ntd
+        )
 
 
 @dataclass(frozen=True)
@@ -36,6 +68,7 @@ class CashflowSnapshot:
     dti: float
     has_bad_debt: bool
     severity: CashflowSeverity
+    total_debt_ntd: int = 0
 
     @property
     def is_healthy(self) -> bool:

@@ -22,9 +22,6 @@ from typing import Final
 # 學長鐵律：銀行核貸死線 — DTI > 70% 直接拒貸或大砍成數。
 DTI_DANGER_RATIO: Final[float] = 0.70
 
-# 預估未來入門收租房的房貸月付金基準（Ch.1 DTI 試算使用）。
-ESTIMATED_FUTURE_MORTGAGE_NTD: Final[int] = 40_000
-
 # 淨現金流『可投資緩衝』門檻 — 低於此值視為 LOW_BUFFER（services.cashflow）。
 LOW_BUFFER_THRESHOLD_NTD: Final[int] = 20_000
 
