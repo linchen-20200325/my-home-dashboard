@@ -10,6 +10,7 @@
 - [x] **Phase 2**：逐層解耦與搬遷 — **33 / 33 全部完成** ✅
 - [x] **Phase 3**：品質、生產化、體驗收尾 — **22 / 22 全部結案** ✅
   - 實際執行 19 項；3 項 YAGNI 經評估封存（詳見 [`ARCHITECTURE.md`](./ARCHITECTURE.md) §6）
+- [x] **代碼淨化與收尾**：完成 ✅ — 全 ruff F401/F841 0 errors，113 affected tests pass
 
 ---
 
@@ -176,3 +177,4 @@
 | Phase 3 AI 生產化 | `94432ee` | 2026-05-17 | token cost tracker + spend cap + retry / rate-limit logic |
 | Phase 3 #53 跨章節 | `64666d0` | 2026-05-17 | `components/navigation.py` + Ch.1 / Ch.10 跳轉按鈕 |
 | Phase 3 收尾 | `4827944` | 2026-05-17 | components retrofit（5 處）+ mypy CI 修正 + 3 項 YAGNI 評估封存 |
+| 代碼淨化收尾 | _(uncommitted)_ | 2026-05-30 | tests/{services/test_leverage,services/test_ai_advisor,repositories/test_openai_client}.py — 移除 4 處未用 imports / unused 區域變數，ruff F401/F841 0 errors |

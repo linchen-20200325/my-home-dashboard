@@ -14,10 +14,8 @@ import pytest
 
 from app.models.constants import (
     BANK_REFINANCE_LTV,
-    M2_BANK_DEPOSIT_ANNUAL_RATE,
     M2_INITIAL_CAPITAL_NTD,
     M2_LEVERAGE_MULTIPLIER,
-    M2_SIMULATION_YEARS,
     STOCK_PLEDGE_ANNUAL_RATE,
     STOCK_PLEDGE_LTV,
 )
@@ -29,7 +27,6 @@ from app.services.leverage import (
     RegionalGrade,
     RegionalTailwindVerdict,
     SafeguardCompleteness,
-    StockPledgeResult,
     SyndicationArbitrageResult,
     VacancyReserveResult,
     WashProgressVerdict,

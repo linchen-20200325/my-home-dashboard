@@ -223,7 +223,7 @@ class TestRetryLogic:
         fake_openai_module["behavior"]["exc_type"] = fake_openai_module["RateLimitError"]
 
         cfg = AIConfig(api_key="sk-test")
-        stream = stream_chat_completion(cfg, [ChatMessage(ChatRole.USER, "hi")])
+        stream_chat_completion(cfg, [ChatMessage(ChatRole.USER, "hi")])
         assert len(fake_openai_module["call_log"]) == 3
 
     def test_retries_on_connection_error(self, fake_openai_module) -> None:

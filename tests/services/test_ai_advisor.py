@@ -19,7 +19,6 @@ from app.models.ai import (
     UsageStats,
 )
 from app.repositories import gemini_client, openai_client
-from app.services import ai_advisor
 from app.services.ai_advisor import (
     MENTOR_SYSTEM_PROMPT,
     accumulate_usage,
